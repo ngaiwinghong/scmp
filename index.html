@@ -297,9 +297,9 @@
         <div class="ref-when">Generic discount, not new-user</div>
       </div>
       <div class="ref-col">
-        <span class="ref-tag badge purple">Custom (≤20ch)</span>
+        <span class="ref-tag badge blue">Custom (≤20ch)</span>
         <div class="ref-name">custom</div>
-        <div class="ref-when">Named campaign, themed color</div>
+        <div class="ref-when">Named campaign, marketing-defined text</div>
       </div>
     </div>
 
@@ -667,14 +667,14 @@ const SCENARIOS = {
   'black-friday': {
     meta: {
       label: 'Custom theme · Black Friday',
-      title: 'Marketing-named campaign with theme override',
-      desc: 'Same 3-phase stepped structure, but marketing has assigned a custom label and purple theme.',
+      title: 'Marketing-named campaign',
+      desc: 'Same 3-phase stepped structure, but marketing has assigned a custom label. The campaign name does the work; colour stays consistent.',
       archetype: '3-phase-stepped'
     },
     data: {
       plan_name: 'Standard: Annual',
       billing_period: 'annual',
-      offer_label: { category: 'custom', text: 'Black Friday', theme: 'purple' },
+      offer_label: { category: 'custom', text: 'Black Friday', theme: 'blue' },
       phases: [
         { sequence: 1, kind: 'intro', duration_label: 'First 3 months', duration_short: '3 months',
           price: { amount: 30, currency: 'HKD' }, price_per: 'month',
