@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SCMP Plan Summary · Standardized Spec Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --scmp-blue: #1B2A5E;
+    --scmp-yellow: #FFCC00;
+    --ink: #15161B;
+    --ink-2: #4A4D57;
+    --ink-3: #8B8E97;
+    --line: #E5E7EB;
+    --line-2: #EFF1F4;
+    --bg: #F4F5F7;
+    --card: #FFFFFF;
+    --info-bg: #E8EEFB;
+    --info-ink: #1B4FB3;
+    --info-soft: #D9E4FB;
+    --success-bg: #E4F5EC;
+    --success-ink: #1F7A4D;
+    --purple-bg: #F3E8FF;
+    --purple-ink: #6B21A8;
+    --red-bg: #FDECEA;
+    --red-ink: #B3261E;
+    --neutral-bg: #F1F2F4;
+    --neutral-ink: #4A4D57;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; font-family: 'Inter', -apple-system, system-ui, sans-serif; color: var(--ink); background: #E8EAEE; }
+  body { display: flex; min-height: 100vh; }
+
+  /* ============ SIDEBAR ============ */
+  .sidebar {
+    width: 300px;
+    background: #1A1B22;
+    color: #E5E7EB;
+    padding: 22px 16px 28px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar h1 { font-size: 14px; font-weight: 600; margin: 0 0 4px; }
+  .sidebar .subtitle { font-size: 11px; color: #8B8E97; margin: 0 0 18px; line-height: 1.4; }
+  .sidebar h2 {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: #6B6E78; margin: 18px 0 8px; font-weight: 600;
+  }
+  .scenario-btn {
+    display: block; width: 100%; text-align: left;
+    background: transparent; border: 1px solid transparent;
+    color: #C9CBD3; padding: 10px 11px; border-radius: 6px;
+    font-size: 12.5px; cursor: pointer; margin-bottom: 3px;
+    transition: all 0.15s; font-family: inherit; line-height: 1.35;
+  }
+  .scenario-btn:hover { background: #25272F; color: #FFF; }
+  .scenario-btn.active { background: var(--scmp-blue); color: #FFF; border-color: #2B3E7C; }
+  .scenario-btn .sub { font-size: 10.5px; color: #8B8E97; margin-top: 2px; }
+  .scenario-btn.active .sub { color: #B9C4E5; }
+
+  /* ============ STAGE ============ */
+  .stage {
+    flex: 1; padding: 28px 28px 40px;
+    background: linear-gradient(180deg, #E8EAEE 0%, #DFE2E8 100%);
+  }
+  .stage-inner { max-width: 1100px; margin: 0 auto; }
+  .stage-label {
+    font-size: 11px; color: #6B6E78; text-transform: uppercase;
+    letter-spacing: 0.08em; margin-bottom: 4px; font-weight: 600;
+  }
+  .stage-title { font-size: 22px; font-weight: 600; margin: 0 0 4px; }
+  .stage-desc { font-size: 13px; color: var(--ink-2); margin: 0 0 22px; line-height: 1.5; max-width: 680px; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* ============ PLAN SUMMARY CARD ============ */
+  .card {
+    background: var(--card); border-radius: var(--radius-lg);
+    padding: 16px 16px 0; border: 1px solid var(--line-2);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .plan-title-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 4px; gap: 8px;
+  }
+  .plan-title { font-size: 16px; font-weight: 600; margin: 0; }
+
+  .badge {
+    font-size: 10.5px; padding: 4px 9px; border-radius: 4px;
+    font-weight: 500; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 4px;
+    line-height: 1;
+  }
+  .badge.blue { background: var(--info-bg); color: var(--info-ink); }
+  .badge.green { background: var(--success-bg); color: var(--success-ink); }
+  .badge.purple { background: var(--purple-bg); color: var(--purple-ink); }
+  .badge.red { background: var(--red-bg); color: var(--red-ink); }
+  .badge.neutral { background: var(--neutral-bg); color: var(--neutral-ink); }
+
+  .plan-sub { font-size: 12.5px; color: var(--ink-2); margin: 0 0 10px; line-height: 1.45; }
+
+  .toggle-details {
+    background: none; border: none; padding: 4px 0; cursor: pointer;
+    color: var(--info-ink); font-size: 12px; font-weight: 500;
+    display: inline-flex; align-items: center; gap: 4px; font-family: inherit;
+    margin-bottom: 10px;
+  }
+  .toggle-details svg { transition: transform 0.2s; }
+  .toggle-details.open svg { transform: rotate(180deg); }
+
+  .billing-rows { display: none; border-top: 1px solid var(--line-2); padding: 4px 0; }
+  .billing-rows.open { display: block; }
+  .billing-row {
+    display: grid; grid-template-columns: 12px 1fr auto; gap: 10px;
+    padding: 11px 0; border-bottom: 1px solid var(--line-2); align-items: start;
+  }
+  .billing-row:last-child { border-bottom: none; }
+  .billing-dot {
+    width: 8px; height: 8px; border-radius: 50%; margin-top: 5px;
+    background: var(--info-ink);
+  }
+  .billing-dot.future { background: transparent; border: 1.5px solid var(--ink-3); }
+  .billing-dot.free { background: var(--success-ink); }
+  .billing-label { font-size: 12.5px; font-weight: 500; }
+  .billing-sub { font-size: 11px; margin-top: 1px; }
+  .billing-sub.blue { color: var(--info-ink); }
+  .billing-sub.grey { color: var(--ink-3); }
+  .billing-row.future .billing-label { color: var(--ink-2); }
+  .billing-row.future .billing-price { color: var(--ink-2); }
+  .billing-row.future .billing-sub { color: var(--ink-3); }
+  .billing-price { font-size: 12.5px; font-weight: 600; text-align: right; }
+  .billing-price.free-tag { color: var(--success-ink); }
+  .billing-strike { font-size: 11px; color: var(--ink-3); text-decoration: line-through; margin-top: 1px; }
+  .billing-tax { font-size: 10.5px; color: var(--ink-3); margin-top: 2px; }
+
+  .due-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 13px 16px; background: #F8F9FB;
+    margin: 0 -16px; border-top: 1px solid var(--line-2);
+    border-bottom-left-radius: var(--radius-lg); border-bottom-right-radius: var(--radius-lg);
+  }
+  .due-label { font-size: 13px; font-weight: 600; }
+  .due-tax-sub { font-size: 10.5px; color: var(--ink-3); margin-top: 2px; }
+  .due-amount { font-size: 16px; font-weight: 600; }
+  .due-strike { font-size: 12.5px; color: var(--ink-3); text-decoration: line-through; margin-right: 6px; }
+
+  /* ============ SPEC PANEL ============ */
+  .spec-panel {
+    background: #FFF;
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    border: 1px solid var(--line-2);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .spec-panel h3 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em;
+    margin: 0 0 12px; color: var(--ink-3); font-weight: 600;
+  }
+  .spec-section { margin-bottom: 18px; }
+  .spec-section:last-child { margin-bottom: 0; }
+  .spec-section h4 {
+    font-size: 12px; font-weight: 600; margin: 0 0 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .spec-section h4 .num {
+    width: 18px; height: 18px; border-radius: 50%; background: var(--scmp-blue);
+    color: #FFF; display: inline-flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700;
+  }
+  pre {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 11.5px; line-height: 1.5;
+    background: #F8F9FB; padding: 12px 14px;
+    border-radius: 6px; margin: 0;
+    overflow-x: auto;
+    border: 1px solid var(--line-2);
+  }
+  .tok-key { color: #6B21A8; }
+  .tok-str { color: #1F7A4D; }
+  .tok-num { color: #B45309; }
+  .tok-null { color: var(--ink-3); font-style: italic; }
+  .tok-bool { color: #B3261E; }
+  .tok-comment { color: var(--ink-3); font-style: italic; }
+
+  .archetype-pill {
+    display: inline-block; font-size: 10px; padding: 3px 7px;
+    background: var(--neutral-bg); color: var(--neutral-ink);
+    border-radius: 3px; font-weight: 500; letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  /* Reference card (top of stage) */
+  .reference {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;
+    background: #FFF; border-radius: var(--radius-lg);
+    padding: 14px; margin-bottom: 22px;
+    border: 1px solid var(--line-2);
+  }
+  .ref-col {
+    text-align: center;
+    padding: 8px 6px;
+    border-right: 1px solid var(--line-2);
+  }
+  .ref-col:last-child { border-right: none; }
+  .ref-col .ref-tag {
+    display: inline-block; font-size: 10.5px; padding: 4px 9px;
+    border-radius: 4px; font-weight: 500; margin-bottom: 6px;
+    line-height: 1;
+  }
+  .ref-col .ref-name { font-size: 10.5px; color: var(--ink-2); font-weight: 500; }
+  .ref-col .ref-when { font-size: 9.5px; color: var(--ink-3); margin-top: 3px; line-height: 1.3; }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <h1>Plan Summary · Spec</h1>
+  <p class="subtitle">One template, six scenarios. Each renders from structured data.</p>
+
+  <h2>Most common</h2>
+  <button class="scenario-btn active" data-scenario="monthly-intro">
+    Standard Monthly · intro
+    <div class="sub">HKD45 → HKD85/mo</div>
+  </button>
+  <button class="scenario-btn" data-scenario="annual-intro">
+    Standard Annual · intro
+    <div class="sub">HKD780 → HKD960/yr</div>
+  </button>
+
+  <h2>Campaigns</h2>
+  <button class="scenario-btn" data-scenario="campaign-monthly">
+    Campaign · Monthly
+    <div class="sub">HKD10 → HKD85/mo</div>
+  </button>
+  <button class="scenario-btn" data-scenario="campaign-annual-pct">
+    Campaign · Annual %-off
+    <div class="sub">50% off year 1</div>
+  </button>
+  <button class="scenario-btn" data-scenario="campaign-stepped">
+    Campaign · Stepped
+    <div class="sub">3 phases · trial paid</div>
+  </button>
+  <button class="scenario-btn" data-scenario="campaign-free-trial">
+    Campaign · Free trial
+    <div class="sub">3 phases · trial free</div>
+  </button>
+
+  <h2>Edge cases</h2>
+  <button class="scenario-btn" data-scenario="stepped-vat">
+    ⚠ Stepped + VAT (worst case)
+    <div class="sub">3 phases · 20% VAT</div>
+  </button>
+  <button class="scenario-btn" data-scenario="black-friday">
+    Custom theme · Black Friday
+    <div class="sub">Marketing override</div>
+  </button>
+</aside>
+
+<main class="stage">
+  <div class="stage-inner">
+    <div class="stage-label" id="stage-label">Most common · Standard Monthly intro</div>
+    <h1 class="stage-title" id="stage-title">Standard Monthly with introductory price</h1>
+    <p class="stage-desc" id="stage-desc">Two-phase structure, monthly billing. Most common new-user offer.</p>
+
+    <div class="reference">
+      <div class="ref-col">
+        <span class="ref-tag badge blue">Introductory price</span>
+        <div class="ref-name">introductory</div>
+        <div class="ref-when">Default new-user discount</div>
+      </div>
+      <div class="ref-col">
+        <span class="ref-tag badge blue">Trial price</span>
+        <div class="ref-name">trial_paid</div>
+        <div class="ref-when">Phase 1 reduced, not free</div>
+      </div>
+      <div class="ref-col">
+        <span class="ref-tag badge green">Free trial</span>
+        <div class="ref-name">trial_free</div>
+        <div class="ref-when">Phase 1 is HKD0</div>
+      </div>
+      <div class="ref-col">
+        <span class="ref-tag badge blue">Sale</span>
+        <div class="ref-name">sale</div>
+        <div class="ref-when">Generic discount, not new-user</div>
+      </div>
+      <div class="ref-col">
+        <span class="ref-tag badge purple">Custom (≤20ch)</span>
+        <div class="ref-name">custom</div>
+        <div class="ref-when">Named campaign, themed color</div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div id="card-mount"></div>
+      <div class="spec-panel" id="spec-mount"></div>
+    </div>
+  </div>
+</main>
+
+<svg style="display:none">
+  <defs>
+    <symbol id="i-chevron" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 14 14"><path d="M6.5 1H1v5.5l6.5 6.5L13 7.5 6.5 1z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linejoin="round"/><circle cx="3.8" cy="3.8" r="0.9" fill="currentColor"/></symbol>
+  </defs>
+</svg>
+
+<script>
+// =====================================================================
+// THE STANDARDIZED COMPONENT
+// Renders a plan summary from a structured data object.
+// No conditional copy, no special cases - everything comes from the data.
+// =====================================================================
+
+const DESCRIPTOR_TABLE = {
+  // [kind, billing] → descriptor template
+  // {n} is replaced with computed percentage
+  'free|any': 'Free trial · cancel anytime',
+  'intro|monthly': 'Intro rate · billed monthly',
+  'intro|annual': 'Introductory rate · {n}% off',
+  'discounted|monthly': 'Discounted rate · billed monthly',
+  'discounted|annual': 'Discounted annual · {n}% off',
+  'standard|monthly': 'Standard rate · renews monthly',
+  'standard|annual': 'Standard rate · renews yearly',
+};
+
+const LABEL_TEXT = {
+  introductory: 'Introductory price',
+  trial_paid: 'Trial price',
+  trial_free: 'Free trial',
+  sale: 'Sale',
+};
+
+function fmtMoney(money) {
+  if (!money) return '';
+  return `${money.currency}${money.amount.toFixed(money.amount % 1 === 0 ? 0 : 2)}`;
+}
+
+function fmtPhasePrice(phase) {
+  if (phase.kind === 'free') return 'FREE';
+  const base = fmtMoney(phase.price);
+  if (phase.price_per === 'month') return `${base}/mo`;
+  if (phase.price_per === 'year') return `${base}/yr`;
+  return base;
+}
+
+function computeDiscount(phase) {
+  if (!phase.compare_at) return null;
+  const pct = Math.round((1 - phase.price.amount / phase.compare_at.amount) * 100);
+  return pct;
+}
+
+function buildDescriptor(phase, billing_period) {
+  const tplKey = phase.kind === 'free' ? 'free|any' : `${phase.kind}|${billing_period}`;
+  let tpl = DESCRIPTOR_TABLE[tplKey] || '';
+  if (tpl.includes('{n}')) {
+    const pct = computeDiscount(phase);
+    if (pct !== null) tpl = tpl.replace('{n}', pct);
+    else tpl = tpl.split('·')[0].trim();   // drop "· N% off" if no compare_at
+  }
+  return tpl;
+}
+
+function buildSummaryLine(phases) {
+  const p1 = phases[0], pLast = phases[phases.length - 1];
+  if (phases.length === 1) {
+    return `${fmtPhasePrice(p1)}, renews automatically.`;
+  }
+  if (phases.length === 2) {
+    return `${fmtPhasePrice(p1)} for ${p1.duration_short}, then renews at ${fmtPhasePrice(pLast)}.`;
+  }
+  if (phases.length === 3) {
+    const p2 = phases[1];
+    if (p1.kind === 'free') {
+      return `Free for ${p1.duration_short}, then ${fmtPhasePrice(p2)} for ${p2.duration_short}. Renews at ${fmtPhasePrice(pLast)}.`;
+    }
+    return `${fmtPhasePrice(p1)} for ${p1.duration_short}, then ${fmtPhasePrice(p2)} for ${p2.duration_short}. Renews at ${fmtPhasePrice(pLast)}.`;
+  }
+  return '';
+}
+
+function renderPhaseRow(phase, billing_period) {
+  const descriptor = buildDescriptor(phase, billing_period);
+  const subClass = phase.is_post_contract ? 'grey' : 'blue';
+  const rowClass = phase.is_post_contract ? 'billing-row future' : 'billing-row';
+  const dotClass = phase.kind === 'free' ? 'billing-dot free'
+                : phase.is_post_contract ? 'billing-dot future'
+                : 'billing-dot';
+  const priceStr = fmtPhasePrice(phase);
+  const priceClass = phase.kind === 'free' ? 'billing-price free-tag' : 'billing-price';
+
+  let priceCol = `<div class="${priceClass}">${priceStr}</div>`;
+  if (phase.compare_at) {
+    priceCol += `<div class="billing-strike">${fmtMoney(phase.compare_at)}</div>`;
+  }
+  if (phase.tax) {
+    if (phase.tax.amount) {
+      priceCol = `<div>${priceCol}<div class="billing-tax">+ ${fmtMoney(phase.tax.amount)} (${phase.tax.rate_pct}% ${phase.tax.label})</div></div>`;
+    } else {
+      priceCol = `<div>${priceCol}<div class="billing-tax">+ ${phase.tax.label} if applicable</div></div>`;
+    }
+  } else {
+    priceCol = `<div>${priceCol}</div>`;
+  }
+
+  return `
+    <div class="${rowClass}">
+      <span class="${dotClass}"></span>
+      <div>
+        <div class="billing-label">${phase.duration_label}</div>
+        <div class="billing-sub ${subClass}">${descriptor}</div>
+      </div>
+      ${priceCol}
+    </div>
+  `;
+}
+
+function renderPlanSummary(data, expanded = true) {
+  const billing = data.billing_period;
+  const summaryLine = buildSummaryLine(data.phases);
+  const phasesHtml = data.phases.map(p => renderPhaseRow(p, billing)).join('');
+
+  const toggleState = expanded ? 'open' : '';
+  const toggleText = expanded ? 'Hide billing details' : 'See billing details';
+
+  // Due today block
+  let dueLeft = `<div class="due-label">Due today</div>`;
+  if (data.due_today.tax_breakdown) {
+    dueLeft += `<div class="due-tax-sub">${data.due_today.tax_breakdown}</div>`;
+  }
+  let dueRight = '';
+  if (data.due_today.compare_at_display) {
+    dueRight += `<span class="due-strike">${data.due_today.compare_at_display}</span>`;
+  }
+  dueRight += `<span class="due-amount">${data.due_today.amount_display}</span>`;
+
+  // Tag
+  let tagHtml = '';
+  if (data.offer_label && data.offer_label.category !== 'none') {
+    tagHtml = `<span class="badge ${data.offer_label.theme}">${data.offer_label.text}</span>`;
+  }
+
+  return `
+    <div class="card">
+      <div class="plan-title-row">
+        <p class="plan-title">${data.plan_name}</p>
+        ${tagHtml}
+      </div>
+      <p class="plan-sub">${summaryLine}</p>
+      <button class="toggle-details ${toggleState}" onclick="toggleDetails(this)">
+        <svg width="14" height="14"><use href="#i-chevron"/></svg>
+        ${toggleText}
+      </button>
+      <div class="billing-rows ${toggleState}">
+        ${phasesHtml}
+      </div>
+      <div class="due-row">
+        <div>${dueLeft}</div>
+        <div>${dueRight}</div>
+      </div>
+    </div>
+  `;
+}
+
+function toggleDetails(btn) {
+  btn.classList.toggle('open');
+  const open = btn.classList.contains('open');
+  btn.innerHTML = `<svg width="14" height="14"><use href="#i-chevron"/></svg> ${open ? 'Hide' : 'See'} billing details`;
+  btn.nextElementSibling.classList.toggle('open');
+}
+
+// =====================================================================
+// THE SCENARIOS (each is just a data object)
+// =====================================================================
+
+const SCENARIOS = {
+
+  'monthly-intro': {
+    meta: {
+      label: 'Most common · Standard Monthly intro',
+      title: 'Standard Monthly with introductory price',
+      desc: 'Two-phase structure, monthly billing. Most common new-user offer pattern.',
+      archetype: '2-phase'
+    },
+    data: {
+      plan_name: 'Standard: Monthly',
+      billing_period: 'monthly',
+      offer_label: { category: 'introductory', text: 'Introductory price', theme: 'blue' },
+      phases: [
+        { sequence: 1, kind: 'intro', duration_label: 'First month', duration_short: '1 month',
+          price: { amount: 45, currency: 'HKD' }, price_per: 'month',
+          compare_at: { amount: 85, currency: 'HKD' }, tax: null, is_post_contract: false },
+        { sequence: 2, kind: 'standard', duration_label: 'Month 2 onward', duration_short: 'ongoing',
+          price: { amount: 85, currency: 'HKD' }, price_per: 'month',
+          compare_at: null, tax: null, is_post_contract: true }
+      ],
+      due_today: { amount_display: 'HKD45.00', compare_at_display: 'HKD85', tax_breakdown: null }
+    }
+  },
+
+  'annual-intro': {
+    meta: {
+      label: 'Most common · Standard Annual intro',
+      title: 'Standard Annual with introductory price',
+      desc: 'Two-phase structure, annual billing. The other most common pattern.',
+      archetype: '2-phase'
+    },
+    data: {
+      plan_name: 'Standard: Annual',
+      billing_period: 'annual',
+      offer_label: { category: 'introductory', text: 'Introductory price', theme: 'blue' },
+      phases: [
+        { sequence: 1, kind: 'intro', duration_label: 'Today – year 1', duration_short: 'a year',
+          price: { amount: 780, currency: 'HKD' }, price_per: 'year',
+          compare_at: { amount: 960, currency: 'HKD' }, tax: null, is_post_contract: false },
+        { sequence: 2, kind: 'standard', duration_label: 'Year 2 onward', duration_short: 'ongoing',
+          price: { amount: 960, currency: 'HKD' }, price_per: 'year',
+          compare_at: null, tax: null, is_post_contract: true }
+      ],
+      due_today: { amount_display: 'HKD780.00', compare_at_display: 'HKD960', tax_breakdown: null }
+    }
+  },
+
+  'campaign-monthly': {
+    meta: {
+      label: 'Campaign · Monthly',
+      title: 'Campaign price for monthly plan',
+      desc: 'Structurally identical to monthly intro — different price, different label.',
+      archetype: '2-phase'
+    },
+    data: {
+      plan_name: 'Standard: Monthly',
+      billing_period: 'monthly',
+      offer_label: { category: 'sale', text: 'Sale', theme: 'blue' },
+      phases: [
+        { sequence: 1, kind: 'intro', duration_label: 'First month', duration_short: '1 month',
+          price: { amount: 10, currency: 'HKD' }, price_per: 'month',
+          compare_at: { amount: 85, currency: 'HKD' }, tax: null, is_post_contract: false },
+        { sequence: 2, kind: 'standard', duration_label: 'Month 2 onward', duration_short: 'ongoing',
+          price: { amount: 85, currency: 'HKD' }, price_per: 'month',
+          compare_at: null, tax: null, is_post_contract: true }
+      ],
+      due_today: { amount_display: 'HKD10.00', compare_at_display: 'HKD85', tax_breakdown: null }
+    }
+  },
+
+  'campaign-annual-pct': {
+    meta: {
+      label: 'Campaign · Annual % off',
+      title: 'Annual plan with percentage discount',
+      desc: 'Same 2-phase structure as annual intro. % is auto-computed from compare_at.',
+      archetype: '2-phase'
+    },
+    data: {
+      plan_name: 'Standard: Annual',
+      billing_period: 'annual',
+      offer_label: { category: 'sale', text: 'Sale', theme: 'blue' },
+      phases: [
+        { sequence: 1, kind: 'intro', duration_label: 'Today – year 1', duration_short: 'a year',
+          price: { amount: 480, currency: 'HKD' }, price_per: 'year',
+          compare_at: { amount: 960, currency: 'HKD' }, tax: null, is_post_contract: false },
+        { sequence: 2, kind: 'standard', duration_label: 'Year 2 onward', duration_short: 'ongoing',
+          price: { amount: 960, currency: 'HKD' }, price_per: 'year',
+          compare_at: null, tax: null, is_post_contract: true }
+      ],
+      due_today: { amount_display: 'HKD480.00', compare_at_display: 'HKD960', tax_breakdown: null }
+    }
+  },
+
+  'campaign-stepped': {
+    meta: {
+      label: 'Campaign · Stepped',
+      title: '3-phase stepped offer (trial paid)',
+      desc: 'Monthly trial price for 3 months, then a full discounted year, then standard rate. The "trial_paid" category.',
+      archetype: '3-phase-stepped'
+    },
+    data: {
+      plan_name: 'Standard: Annual',
+      billing_period: 'annual',
+      offer_label: { category: 'trial_paid', text: 'Trial price', theme: 'blue' },
+      phases: [
+        { sequence: 1, kind: 'intro', duration_label: 'First 3 months', duration_short: '3 months',
+          price: { amount: 30, currency: 'HKD' }, price_per: 'month',
+          compare_at: null, tax: null, is_post_contract: false },
+        { sequence: 2, kind: 'discounted', duration_label: 'Next 12 months', duration_short: 'a year',
+          price: { amount: 480, currency: 'HKD' }, price_per: 'year',
+          compare_at: { amount: 960, currency: 'HKD' }, tax: null, is_post_contract: false },
+        { sequence: 3, kind: 'standard', duration_label: 'After that, every year', duration_short: 'ongoing',
+          price: { amount: 960, currency: 'HKD' }, price_per: 'year',
+          compare_at: null, tax: null, is_post_contract: true }
+      ],
+      due_today: { amount_display: 'HKD30.00', compare_at_display: 'HKD85', tax_breakdown: null }
+    }
+  },
+
+  'campaign-free-trial': {
+    meta: {
+      label: 'Campaign · Free trial',
+      title: '3-phase free trial offer',
+      desc: '1 month free, then a full discounted year, then standard rate. Note the green dot and green badge.',
+      archetype: '3-phase-trial'
+    },
+    data: {
+      plan_name: 'Standard: Annual',
+      billing_period: 'annual',
+      offer_label: { category: 'trial_free', text: 'Free trial', theme: 'green' },
+      phases: [
+        { sequence: 1, kind: 'free', duration_label: 'First month', duration_short: '1 month',
+          price: { amount: 0, currency: 'HKD' }, price_per: 'month',
+          compare_at: null, tax: null, is_post_contract: false },
+        { sequence: 2, kind: 'discounted', duration_label: 'Next 12 months', duration_short: 'a year',
+          price: { amount: 480, currency: 'HKD' }, price_per: 'year',
+          compare_at: { amount: 960, currency: 'HKD' }, tax: null, is_post_contract: false },
+        { sequence: 3, kind: 'standard', duration_label: 'After that, every year', duration_short: 'ongoing',
+          price: { amount: 960, currency: 'HKD' }, price_per: 'year',
+          compare_at: null, tax: null, is_post_contract: true }
+      ],
+      due_today: { amount_display: 'HKD0.00', compare_at_display: null, tax_breakdown: null }
+    }
+  },
+
+  'stepped-vat': {
+    meta: {
+      label: '⚠ Stepped + VAT (worst case)',
+      title: 'Worst case: 3 phases with tax applied',
+      desc: 'Tax is a modifier on each phase. Future phases show "if applicable" when region is unknown. Due today shows the inclusive total with a breakdown sub-line.',
+      archetype: '3-phase-stepped'
+    },
+    data: {
+      plan_name: 'Standard: Annual',
+      billing_period: 'annual',
+      offer_label: { category: 'custom', text: 'Spring Sale', theme: 'blue' },
+      phases: [
+        { sequence: 1, kind: 'intro', duration_label: 'First 3 months', duration_short: '3 months',
+          price: { amount: 4, currency: 'USD' }, price_per: 'month',
+          compare_at: null,
+          tax: { label: 'VAT', rate_pct: 20, amount: { amount: 0.80, currency: 'USD' } },
+          is_post_contract: false },
+        { sequence: 2, kind: 'discounted', duration_label: 'Next 12 months', duration_short: 'a year',
+          price: { amount: 60, currency: 'USD' }, price_per: 'year',
+          compare_at: { amount: 120, currency: 'USD' },
+          tax: { label: 'VAT', rate_pct: 20, amount: { amount: 12, currency: 'USD' } },
+          is_post_contract: false },
+        { sequence: 3, kind: 'standard', duration_label: 'After that, every year', duration_short: 'ongoing',
+          price: { amount: 120, currency: 'USD' }, price_per: 'year',
+          compare_at: null,
+          tax: { label: 'VAT', rate_pct: 20, amount: null },
+          is_post_contract: true }
+      ],
+      due_today: { amount_display: 'USD4.80', compare_at_display: null,
+        tax_breakdown: 'USD4.00 + VAT USD0.80' }
+    }
+  },
+
+  'black-friday': {
+    meta: {
+      label: 'Custom theme · Black Friday',
+      title: 'Marketing-named campaign with theme override',
+      desc: 'Same 3-phase stepped structure, but marketing has assigned a custom label and purple theme.',
+      archetype: '3-phase-stepped'
+    },
+    data: {
+      plan_name: 'Standard: Annual',
+      billing_period: 'annual',
+      offer_label: { category: 'custom', text: 'Black Friday', theme: 'purple' },
+      phases: [
+        { sequence: 1, kind: 'intro', duration_label: 'First 3 months', duration_short: '3 months',
+          price: { amount: 30, currency: 'HKD' }, price_per: 'month',
+          compare_at: null, tax: null, is_post_contract: false },
+        { sequence: 2, kind: 'discounted', duration_label: 'Next 12 months', duration_short: 'a year',
+          price: { amount: 480, currency: 'HKD' }, price_per: 'year',
+          compare_at: { amount: 960, currency: 'HKD' }, tax: null, is_post_contract: false },
+        { sequence: 3, kind: 'standard', duration_label: 'After that, every year', duration_short: 'ongoing',
+          price: { amount: 960, currency: 'HKD' }, price_per: 'year',
+          compare_at: null, tax: null, is_post_contract: true }
+      ],
+      due_today: { amount_display: 'HKD30.00', compare_at_display: 'HKD85', tax_breakdown: null }
+    }
+  },
+};
+
+// =====================================================================
+// SPEC PANEL (shows the data object that produced the rendering)
+// =====================================================================
+
+function syntaxHighlight(json) {
+  return json
+    .replace(/("(?:\\.|[^"\\])*")(\s*:)/g, '<span class="tok-key">$1</span>$2')
+    .replace(/:\s*("(?:\\.|[^"\\])*")/g, function(_, s) { return ': <span class="tok-str">' + s + '</span>'; })
+    .replace(/:\s*(true|false)/g, ': <span class="tok-bool">$1</span>')
+    .replace(/:\s*null/g, ': <span class="tok-null">null</span>')
+    .replace(/:\s*(-?\d+\.?\d*)/g, ': <span class="tok-num">$1</span>');
+}
+
+function renderSpecPanel(scenario) {
+  const { data, meta } = scenario;
+  return `
+    <h3>Component input</h3>
+    <div class="spec-section">
+      <h4><span class="num">1</span> Archetype</h4>
+      <span class="archetype-pill">${meta.archetype}</span>
+    </div>
+    <div class="spec-section">
+      <h4><span class="num">2</span> Offer label</h4>
+      <pre>${syntaxHighlight(JSON.stringify(data.offer_label, null, 2))}</pre>
+    </div>
+    <div class="spec-section">
+      <h4><span class="num">3</span> Phases (${data.phases.length})</h4>
+      <pre>${syntaxHighlight(JSON.stringify(data.phases, null, 2))}</pre>
+    </div>
+    <div class="spec-section">
+      <h4><span class="num">4</span> Due today</h4>
+      <pre>${syntaxHighlight(JSON.stringify(data.due_today, null, 2))}</pre>
+    </div>
+  `;
+}
+
+// =====================================================================
+// ROUTER
+// =====================================================================
+
+function goTo(id) {
+  const sc = SCENARIOS[id];
+  if (!sc) return;
+  document.getElementById('stage-label').textContent = sc.meta.label;
+  document.getElementById('stage-title').textContent = sc.meta.title;
+  document.getElementById('stage-desc').textContent = sc.meta.desc;
+  document.getElementById('card-mount').innerHTML = renderPlanSummary(sc.data, true);
+  document.getElementById('spec-mount').innerHTML = renderSpecPanel(sc);
+  document.querySelectorAll('.scenario-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.scenario === id);
+  });
+}
+
+document.querySelectorAll('.scenario-btn').forEach(btn => {
+  btn.addEventListener('click', () => goTo(btn.dataset.scenario));
+});
+
+goTo('monthly-intro');
+</script>
+
+</body>
+</html>
