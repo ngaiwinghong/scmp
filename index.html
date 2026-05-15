@@ -266,13 +266,17 @@
   <p class="subtitle">One template, all SCMP scenarios.<br/>Roboto + SCMP tokens from Figma.</p>
 
   <h2>Most common</h2>
+  <button class="scenario-btn" data-scenario="plain-annual">
+    Plain Annual · no campaign
+    <div class="sub">1 phase · Case [A]</div>
+  </button>
   <button class="scenario-btn active" data-scenario="monthly-intro">
     Standard Monthly · intro
-    <div class="sub">HKD45 → HKD85/mo</div>
+    <div class="sub">2 phases · Case [A, C]</div>
   </button>
   <button class="scenario-btn" data-scenario="annual-intro">
     Standard Annual · intro
-    <div class="sub">HKD780 → HKD960/yr</div>
+    <div class="sub">2 phases · Case [A, C]</div>
   </button>
 
   <h2>Campaigns</h2>
@@ -286,7 +290,11 @@
   </button>
   <button class="scenario-btn" data-scenario="campaign-stepped">
     Campaign · Welcome back
-    <div class="sub">3 phases, returning users</div>
+    <div class="sub">3 phases, monthly intro</div>
+  </button>
+  <button class="scenario-btn" data-scenario="campaign-stepped-lump">
+    Campaign · Lump-sum intro
+    <div class="sub">HKD90 for first 3 months</div>
   </button>
   <button class="scenario-btn" data-scenario="campaign-free-trial">
     Campaign · Free trial
@@ -367,10 +375,13 @@ const DESCRIPTOR_TABLE = {
   'free|any': 'Free trial · cancel anytime',
   'intro|monthly': 'Intro rate · billed monthly',
   'intro|annual': 'Introductory rate · {n}% off',
+  'intro|lump_sum': 'One-time intro charge',
   'discounted|monthly': 'Discounted rate · billed monthly',
   'discounted|annual': 'Discounted annual · {n}% off',
+  'discounted|lump_sum': 'Discounted block · {n}% off',
   'standard|monthly': 'Standard rate · renews monthly',
   'standard|annual': 'Standard rate · renews yearly',
+  'standard|lump_sum': 'Standard rate · billed in full',
 };
 
 function fmtMoney(money) {
@@ -378,9 +389,25 @@ function fmtMoney(money) {
   return `${money.currency}${money.amount.toFixed(money.amount % 1 === 0 ? 0 : 2)}`;
 }
 
+function buildDurationLabel(phase, position, totalPhases) {
+  // Position-derived wording (Morty's rule: data + position → label)
+  // First in array        → "First {X}"
+  // Middle (not first/last) → "Next {X}"
+  // Last in array         → "After that, every {X}"
+  // Single phase (both first and last) → treated as last
+  const x = phase.duration_short;
+  if (totalPhases === 1) return `After that, every ${x}`;
+  if (position === 0) return `First ${x}`;
+  if (position === totalPhases - 1) return `After that, every ${x}`;
+  return `Next ${x}`;
+}
+
 function fmtPhasePrice(phase) {
   if (phase.kind === 'free') return 'FREE';
   const base = fmtMoney(phase.price);
+  // Lump-sum phase: one upfront charge covering a multi-period block
+  // e.g. "HKD90 for the first 3 months" — show just the price, no /mo or /yr suffix
+  if (phase.price_per === 'lump_sum') return base;
   if (phase.price_per === 'month') return `${base}/mo`;
   if (phase.price_per === 'year') return `${base}/yr`;
   return base;
@@ -392,7 +419,15 @@ function computeDiscount(phase) {
 }
 
 function buildDescriptor(phase, billing_period) {
-  const tplKey = phase.kind === 'free' ? 'free|any' : `${phase.kind}|${billing_period}`;
+  // For lump-sum phases, look up by 'lump_sum' regardless of billing_period
+  let tplKey;
+  if (phase.kind === 'free') {
+    tplKey = 'free|any';
+  } else if (phase.price_per === 'lump_sum') {
+    tplKey = `${phase.kind}|lump_sum`;
+  } else {
+    tplKey = `${phase.kind}|${billing_period}`;
+  }
   let tpl = DESCRIPTOR_TABLE[tplKey] || '';
   if (tpl.includes('{n}')) {
     const pct = computeDiscount(phase);
@@ -404,6 +439,9 @@ function buildDescriptor(phase, billing_period) {
 
 function buildSummaryLine(phases) {
   const p1 = phases[0], pLast = phases[phases.length - 1];
+  if (phases.length === 1) {
+    return `${fmtPhasePrice(p1)}. Renews automatically.`;
+  }
   if (phases.length === 2) {
     return `${fmtPhasePrice(p1)} for ${p1.duration_short}. Renews at ${fmtPhasePrice(pLast)}.`;
   }
@@ -417,8 +455,9 @@ function buildSummaryLine(phases) {
   return '';
 }
 
-function renderPhaseRow(phase, billing_period) {
+function renderPhaseRow(phase, billing_period, position, totalPhases) {
   const descriptor = buildDescriptor(phase, billing_period);
+  const durationLabel = buildDurationLabel(phase, position, totalPhases);
   const descClass = phase.is_post_contract ? 'phase-desc muted' : 'phase-desc';
   const dotIcon = phase.kind === 'free' ? 'dot-free'
                 : phase.is_post_contract ? 'dot-ring'
@@ -443,7 +482,7 @@ function renderPhaseRow(phase, billing_period) {
       <div class="phase-left">
         <div class="phase-dot"><svg width="16" height="16"><use href="#${dotIcon}"/></svg></div>
         <div class="phase-text">
-          <div class="phase-label">${phase.duration_label}</div>
+          <div class="phase-label">${durationLabel}</div>
           <div class="${descClass}">${descriptor}</div>
         </div>
       </div>
@@ -459,7 +498,7 @@ function renderPhaseRow(phase, billing_period) {
 function renderPlanSummary(data, expanded = true) {
   const billing = data.billing_period;
   const summaryLine = buildSummaryLine(data.phases);
-  const phasesHtml = data.phases.map(p => renderPhaseRow(p, billing)).join('');
+  const phasesHtml = data.phases.map((p, i) => renderPhaseRow(p, billing, i, data.phases.length)).join('');
 
   const tagHtml = (data.offer_label && data.offer_label.category !== 'none')
     ? `<span class="badge ${data.offer_label.theme}">${data.offer_label.text}</span>` : '';
@@ -511,14 +550,25 @@ function toggleDetails(el) {
 }
 
 const SCENARIOS = {
+  'plain-annual': {
+    meta: { label: 'Most common · Plain Annual (no campaign)', title: 'Standard Annual with no offer applied', desc: 'Single-phase rendering. The renderer treats a single phase as "last", so the duration label reads "After that, every year". No tag, no strikethrough, no discount.', archetype: '1-phase' },
+    data: {
+      plan_name: 'Standard: Annual', billing_period: 'annual',
+      offer_label: { category: 'none', text: '', theme: 'sale' },
+      phases: [
+        { sequence: 1, kind: 'standard', duration_short: 'year', price: { amount: 960, currency: 'HKD' }, price_per: 'year', compare_at: null, tax: null, is_post_contract: false }
+      ],
+      due_today: { amount_display: 'HKD960.00', compare_at_display: null, tax_breakdown: null }
+    }
+  },
   'monthly-intro': {
     meta: { label: 'Most common · Standard Monthly intro', title: 'Standard Monthly with introductory price', desc: 'Two-phase structure, monthly billing. Most common new-user offer pattern.', archetype: '2-phase' },
     data: {
       plan_name: 'Standard: Monthly', billing_period: 'monthly',
       offer_label: { category: 'introductory', text: 'Introductory offer', theme: 'introductory' },
       phases: [
-        { sequence: 1, kind: 'intro', duration_label: 'First month', duration_short: '1 month', price: { amount: 45, currency: 'HKD' }, price_per: 'month', compare_at: { amount: 85, currency: 'HKD' }, tax: null, is_post_contract: false },
-        { sequence: 2, kind: 'standard', duration_label: 'After that, every month', duration_short: 'ongoing', price: { amount: 85, currency: 'HKD' }, price_per: 'month', compare_at: null, tax: null, is_post_contract: true }
+        { sequence: 1, kind: 'intro', duration_short: '1 month', price: { amount: 45, currency: 'HKD' }, price_per: 'month', compare_at: { amount: 85, currency: 'HKD' }, tax: null, is_post_contract: false },
+        { sequence: 2, kind: 'standard', duration_short: 'ongoing', price: { amount: 85, currency: 'HKD' }, price_per: 'month', compare_at: null, tax: null, is_post_contract: true }
       ],
       due_today: { amount_display: 'HKD45.00', compare_at_display: 'HKD85', tax_breakdown: null }
     }
@@ -529,8 +579,8 @@ const SCENARIOS = {
       plan_name: 'Standard: Annual', billing_period: 'annual',
       offer_label: { category: 'introductory', text: 'Introductory offer', theme: 'introductory' },
       phases: [
-        { sequence: 1, kind: 'intro', duration_label: 'First year', duration_short: 'a year', price: { amount: 780, currency: 'HKD' }, price_per: 'year', compare_at: { amount: 960, currency: 'HKD' }, tax: null, is_post_contract: false },
-        { sequence: 2, kind: 'standard', duration_label: 'After that, every year', duration_short: 'ongoing', price: { amount: 960, currency: 'HKD' }, price_per: 'year', compare_at: null, tax: null, is_post_contract: true }
+        { sequence: 1, kind: 'intro', duration_short: 'a year', price: { amount: 780, currency: 'HKD' }, price_per: 'year', compare_at: { amount: 960, currency: 'HKD' }, tax: null, is_post_contract: false },
+        { sequence: 2, kind: 'standard', duration_short: 'ongoing', price: { amount: 960, currency: 'HKD' }, price_per: 'year', compare_at: null, tax: null, is_post_contract: true }
       ],
       due_today: { amount_display: 'HKD780.00', compare_at_display: 'HKD960', tax_breakdown: null }
     }
@@ -541,8 +591,8 @@ const SCENARIOS = {
       plan_name: 'Standard: Monthly', billing_period: 'monthly',
       offer_label: { category: 'sale', text: 'Sale', theme: 'sale' },
       phases: [
-        { sequence: 1, kind: 'intro', duration_label: 'First month', duration_short: '1 month', price: { amount: 10, currency: 'HKD' }, price_per: 'month', compare_at: { amount: 85, currency: 'HKD' }, tax: null, is_post_contract: false },
-        { sequence: 2, kind: 'standard', duration_label: 'After that, every month', duration_short: 'ongoing', price: { amount: 85, currency: 'HKD' }, price_per: 'month', compare_at: null, tax: null, is_post_contract: true }
+        { sequence: 1, kind: 'intro', duration_short: '1 month', price: { amount: 10, currency: 'HKD' }, price_per: 'month', compare_at: { amount: 85, currency: 'HKD' }, tax: null, is_post_contract: false },
+        { sequence: 2, kind: 'standard', duration_short: 'ongoing', price: { amount: 85, currency: 'HKD' }, price_per: 'month', compare_at: null, tax: null, is_post_contract: true }
       ],
       due_today: { amount_display: 'HKD10.00', compare_at_display: 'HKD85', tax_breakdown: null }
     }
@@ -553,8 +603,8 @@ const SCENARIOS = {
       plan_name: 'Standard: Annual', billing_period: 'annual',
       offer_label: { category: 'sale', text: 'Sale', theme: 'sale' },
       phases: [
-        { sequence: 1, kind: 'intro', duration_label: 'First year', duration_short: 'a year', price: { amount: 480, currency: 'HKD' }, price_per: 'year', compare_at: { amount: 960, currency: 'HKD' }, tax: null, is_post_contract: false },
-        { sequence: 2, kind: 'standard', duration_label: 'After that, every year', duration_short: 'ongoing', price: { amount: 960, currency: 'HKD' }, price_per: 'year', compare_at: null, tax: null, is_post_contract: true }
+        { sequence: 1, kind: 'intro', duration_short: 'a year', price: { amount: 480, currency: 'HKD' }, price_per: 'year', compare_at: { amount: 960, currency: 'HKD' }, tax: null, is_post_contract: false },
+        { sequence: 2, kind: 'standard', duration_short: 'ongoing', price: { amount: 960, currency: 'HKD' }, price_per: 'year', compare_at: null, tax: null, is_post_contract: true }
       ],
       due_today: { amount_display: 'HKD480.00', compare_at_display: 'HKD960', tax_breakdown: null }
     }
@@ -565,11 +615,24 @@ const SCENARIOS = {
       plan_name: 'Standard: Annual', billing_period: 'annual',
       offer_label: { category: 'welcome_back', text: 'Welcome back offer', theme: 'welcome-back' },
       phases: [
-        { sequence: 1, kind: 'intro', duration_label: 'First 3 months', duration_short: '3 months', price: { amount: 30, currency: 'HKD' }, price_per: 'month', compare_at: null, tax: null, is_post_contract: false },
-        { sequence: 2, kind: 'discounted', duration_label: 'Next 12 months', duration_short: 'a year', price: { amount: 480, currency: 'HKD' }, price_per: 'year', compare_at: { amount: 960, currency: 'HKD' }, tax: null, is_post_contract: false },
-        { sequence: 3, kind: 'standard', duration_label: 'After that, every year', duration_short: 'ongoing', price: { amount: 960, currency: 'HKD' }, price_per: 'year', compare_at: null, tax: null, is_post_contract: true }
+        { sequence: 1, kind: 'intro', duration_short: '3 months', price: { amount: 30, currency: 'HKD' }, price_per: 'month', compare_at: null, tax: null, is_post_contract: false },
+        { sequence: 2, kind: 'discounted', duration_short: 'a year', price: { amount: 480, currency: 'HKD' }, price_per: 'year', compare_at: { amount: 960, currency: 'HKD' }, tax: null, is_post_contract: false },
+        { sequence: 3, kind: 'standard', duration_short: 'ongoing', price: { amount: 960, currency: 'HKD' }, price_per: 'year', compare_at: null, tax: null, is_post_contract: true }
       ],
       due_today: { amount_display: 'HKD30.00', compare_at_display: 'HKD85', tax_breakdown: null }
+    }
+  },
+  'campaign-stepped-lump': {
+    meta: { label: 'Campaign · Lump-sum intro', title: '3-phase with lump-sum intro charge', desc: 'One upfront charge of HKD90 covering the first 3 months, then a full discounted year, then standard rate. Note the price reads "HKD90" with no "/mo" suffix.', archetype: '3-phase-stepped' },
+    data: {
+      plan_name: 'Standard: Annual', billing_period: 'annual',
+      offer_label: { category: 'welcome_back', text: 'Welcome back offer', theme: 'welcome-back' },
+      phases: [
+        { sequence: 1, kind: 'intro', duration_short: '3 months', price: { amount: 90, currency: 'HKD' }, price_per: 'lump_sum', compare_at: null, tax: null, is_post_contract: false },
+        { sequence: 2, kind: 'discounted', duration_short: 'a year', price: { amount: 480, currency: 'HKD' }, price_per: 'year', compare_at: { amount: 960, currency: 'HKD' }, tax: null, is_post_contract: false },
+        { sequence: 3, kind: 'standard', duration_short: 'ongoing', price: { amount: 960, currency: 'HKD' }, price_per: 'year', compare_at: null, tax: null, is_post_contract: true }
+      ],
+      due_today: { amount_display: 'HKD90.00', compare_at_display: 'HKD255', tax_breakdown: null }
     }
   },
   'campaign-free-trial': {
@@ -578,9 +641,9 @@ const SCENARIOS = {
       plan_name: 'Standard: Annual', billing_period: 'annual',
       offer_label: { category: 'free_trial', text: 'Free trial', theme: 'free-trial' },
       phases: [
-        { sequence: 1, kind: 'free', duration_label: 'First month', duration_short: '1 month', price: { amount: 0, currency: 'HKD' }, price_per: 'month', compare_at: null, tax: null, is_post_contract: false },
-        { sequence: 2, kind: 'discounted', duration_label: 'Next 12 months', duration_short: 'a year', price: { amount: 480, currency: 'HKD' }, price_per: 'year', compare_at: { amount: 960, currency: 'HKD' }, tax: null, is_post_contract: false },
-        { sequence: 3, kind: 'standard', duration_label: 'After that, every year', duration_short: 'ongoing', price: { amount: 960, currency: 'HKD' }, price_per: 'year', compare_at: null, tax: null, is_post_contract: true }
+        { sequence: 1, kind: 'free', duration_short: '1 month', price: { amount: 0, currency: 'HKD' }, price_per: 'month', compare_at: null, tax: null, is_post_contract: false },
+        { sequence: 2, kind: 'discounted', duration_short: 'a year', price: { amount: 480, currency: 'HKD' }, price_per: 'year', compare_at: { amount: 960, currency: 'HKD' }, tax: null, is_post_contract: false },
+        { sequence: 3, kind: 'standard', duration_short: 'ongoing', price: { amount: 960, currency: 'HKD' }, price_per: 'year', compare_at: null, tax: null, is_post_contract: true }
       ],
       due_today: { amount_display: 'HKD0.00', compare_at_display: null, tax_breakdown: null }
     }
@@ -591,9 +654,9 @@ const SCENARIOS = {
       plan_name: 'Standard: Annual', billing_period: 'annual',
       offer_label: { category: 'custom', text: 'Spring Sale', theme: 'sale' },
       phases: [
-        { sequence: 1, kind: 'intro', duration_label: 'First 3 months', duration_short: '3 months', price: { amount: 4, currency: 'USD' }, price_per: 'month', compare_at: null, tax: { label: 'VAT', rate_pct: 20, amount: { amount: 0.80, currency: 'USD' } }, is_post_contract: false },
-        { sequence: 2, kind: 'discounted', duration_label: 'Next 12 months', duration_short: 'a year', price: { amount: 60, currency: 'USD' }, price_per: 'year', compare_at: { amount: 120, currency: 'USD' }, tax: { label: 'VAT', rate_pct: 20, amount: { amount: 12, currency: 'USD' } }, is_post_contract: false },
-        { sequence: 3, kind: 'standard', duration_label: 'After that, every year', duration_short: 'ongoing', price: { amount: 120, currency: 'USD' }, price_per: 'year', compare_at: null, tax: { label: 'VAT', rate_pct: 20, amount: null }, is_post_contract: true }
+        { sequence: 1, kind: 'intro', duration_short: '3 months', price: { amount: 4, currency: 'USD' }, price_per: 'month', compare_at: null, tax: { label: 'VAT', rate_pct: 20, amount: { amount: 0.80, currency: 'USD' } }, is_post_contract: false },
+        { sequence: 2, kind: 'discounted', duration_short: 'a year', price: { amount: 60, currency: 'USD' }, price_per: 'year', compare_at: { amount: 120, currency: 'USD' }, tax: { label: 'VAT', rate_pct: 20, amount: { amount: 12, currency: 'USD' } }, is_post_contract: false },
+        { sequence: 3, kind: 'standard', duration_short: 'ongoing', price: { amount: 120, currency: 'USD' }, price_per: 'year', compare_at: null, tax: { label: 'VAT', rate_pct: 20, amount: null }, is_post_contract: true }
       ],
       due_today: { amount_display: 'USD4.80', compare_at_display: null, tax_breakdown: 'USD4.00 + VAT USD0.80' }
     }
@@ -604,9 +667,9 @@ const SCENARIOS = {
       plan_name: 'Standard: Annual', billing_period: 'annual',
       offer_label: { category: 'custom', text: 'Black Friday Deal', theme: 'sale' },
       phases: [
-        { sequence: 1, kind: 'intro', duration_label: 'First 3 months', duration_short: '3 months', price: { amount: 30, currency: 'HKD' }, price_per: 'month', compare_at: null, tax: null, is_post_contract: false },
-        { sequence: 2, kind: 'discounted', duration_label: 'Next 12 months', duration_short: 'a year', price: { amount: 480, currency: 'HKD' }, price_per: 'year', compare_at: { amount: 960, currency: 'HKD' }, tax: null, is_post_contract: false },
-        { sequence: 3, kind: 'standard', duration_label: 'After that, every year', duration_short: 'ongoing', price: { amount: 960, currency: 'HKD' }, price_per: 'year', compare_at: null, tax: null, is_post_contract: true }
+        { sequence: 1, kind: 'intro', duration_short: '3 months', price: { amount: 30, currency: 'HKD' }, price_per: 'month', compare_at: null, tax: null, is_post_contract: false },
+        { sequence: 2, kind: 'discounted', duration_short: 'a year', price: { amount: 480, currency: 'HKD' }, price_per: 'year', compare_at: { amount: 960, currency: 'HKD' }, tax: null, is_post_contract: false },
+        { sequence: 3, kind: 'standard', duration_short: 'ongoing', price: { amount: 960, currency: 'HKD' }, price_per: 'year', compare_at: null, tax: null, is_post_contract: true }
       ],
       due_today: { amount_display: 'HKD30.00', compare_at_display: 'HKD85', tax_breakdown: null }
     }
