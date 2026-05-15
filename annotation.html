@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Order Summary · Variable Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --core-black: #000000;
+    --core-white: #FFFFFF;
+    --grey-900: #333333;
+    --grey-700: #666666;
+    --grey-500: #888888;
+    --grey-200: #DFDFDF;
+
+    --primary-blue-300: #788AC4;
+    --primary-blue-400: #2C4692;
+    --primary-blue-500: #001246;
+    --sec-blue-50: #ECF3FF;
+    --sec-blue-200: #B5CEFF;
+    --sec-blue-500: #4585FF;
+    --teal-100: #D4ECE9;
+    --teal-500: #2AA191;
+
+    --warn-bg: #FFF4CD;
+    --warn-line: #FFCA05;
+    --warn-ink: #7A5800;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: 'Roboto', -apple-system, system-ui, sans-serif;
+    color: var(--core-black);
+    background: #F4F5F7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { padding: 40px 28px 60px; max-width: 1320px; margin: 0 auto; }
+
+  header { margin-bottom: 32px; }
+  .eyebrow {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--primary-blue-400); margin: 0 0 6px;
+  }
+  h1 { font-size: 28px; font-weight: 700; margin: 0 0 8px; }
+  .lede { font-size: 15px; color: var(--grey-700); line-height: 1.55; max-width: 720px; margin: 0; }
+
+  /* ============ MAIN DIAGRAM LAYOUT ============ */
+  .diagram {
+    display: grid;
+    grid-template-columns: 360px 1fr 380px;
+    gap: 80px;
+    align-items: start;
+    position: relative;
+    margin-top: 32px;
+  }
+  .col-left, .col-right { display: flex; flex-direction: column; gap: 28px; padding-top: 12px; }
+  .col-mid { display: flex; justify-content: center; padding-top: 20px; }
+
+  /* ============ THE CARD ============ */
+  .card-wrap { position: relative; }
+  .card {
+    background: var(--core-white);
+    border: 1px solid var(--grey-200);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 12px;
+    width: 360px;
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  }
+  .top-section { display: flex; flex-direction: column; gap: 8px; }
+  .plan-title-row {
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;
+  }
+  .plan-title { font-size: 18px; font-weight: 700; margin: 0; line-height: 1.2; }
+  .badge {
+    font-size: 12px; font-weight: 700; padding: 4px 8px;
+    border-radius: 4px; line-height: 1.2; white-space: nowrap;
+    color: var(--core-white);
+    background: var(--primary-blue-400); /* welcome-back, for the demo card */
+  }
+  .plan-sub {
+    font-size: 14px; font-weight: 400; line-height: 18px;
+    color: var(--grey-900); margin: 0;
+  }
+  .phases { display: flex; flex-direction: column; gap: 8px; }
+  .phase-row {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding-top: 8px;
+    border-top: 1px solid var(--grey-200);
+  }
+  .phase-left { display: flex; gap: 4px; align-items: flex-start; flex: 1; }
+  .phase-dot { flex-shrink: 0; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; }
+  .phase-text { display: flex; flex-direction: column; }
+  .phase-label { font-size: 14px; line-height: 18px; }
+  .phase-desc { font-size: 12px; line-height: 18px; color: var(--sec-blue-500); }
+  .phase-desc.muted { color: var(--grey-700); }
+  .phase-right { display: flex; flex-direction: column; align-items: flex-end; }
+  .phase-price { font-size: 14px; line-height: 18px; white-space: nowrap; }
+  .phase-compare { font-size: 12px; line-height: 18px; color: var(--grey-700); text-decoration: line-through; }
+  .toggle-row { display: flex; gap: 8px; align-items: center; }
+  .toggle-text { font-size: 12px; color: var(--primary-blue-400); }
+  .due-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 16px;
+    border-top: 1px solid var(--grey-200);
+  }
+  .due-label { font-size: 14px; }
+  .due-right { display: flex; gap: 4px; align-items: center; }
+  .due-strike { font-size: 14px; color: var(--grey-500); text-decoration: line-through; }
+  .due-amount { font-size: 14px; font-weight: 700; }
+
+  /* highlight markers on card */
+  .marker {
+    position: absolute;
+    width: 22px; height: 22px;
+    background: var(--primary-blue-400);
+    color: #FFF;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 3;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    font-family: 'Roboto', sans-serif;
+  }
+
+  /* ============ CALLOUT CARDS ============ */
+  .callout {
+    background: var(--core-white);
+    border-left: 3px solid var(--sec-blue-500);
+    border-radius: 6px;
+    padding: 14px 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    position: relative;
+  }
+  .callout .num {
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    width: 22px; height: 22px;
+    background: var(--primary-blue-400);
+    color: #FFF;
+    border-radius: 50%;
+    font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  }
+  .callout h3 { font-size: 13px; font-weight: 700; margin: 0 0 4px; }
+  .callout .label { font-size: 11px; color: var(--grey-500); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .callout p { font-size: 12px; color: var(--grey-700); margin: 0 0 8px; line-height: 1.5; }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout .fields {
+    background: #F8F9FB;
+    border-radius: 4px;
+    padding: 8px 10px;
+    margin-top: 8px;
+  }
+  .callout .fields code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--primary-blue-400);
+    display: block;
+    line-height: 1.7;
+  }
+  .callout .fields code .v { color: var(--grey-700); font-weight: 400; }
+  .callout .fields code .c { color: var(--grey-500); font-style: italic; }
+
+  .callout.auto { border-left-color: var(--warn-line); background: #FFFDF5; }
+  .callout.auto .num { background: var(--warn-line); color: var(--core-black); }
+  .callout.auto h3 { color: var(--warn-ink); }
+
+  /* ============ TAG SYSTEM (legend) ============ */
+  .tag-legend {
+    margin-top: 56px;
+    background: var(--core-white);
+    border-radius: 8px;
+    border: 1px solid var(--grey-200);
+    overflow: hidden;
+  }
+  .legend-header {
+    background: #F8F9FB;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--grey-200);
+  }
+  .legend-header h2 { font-size: 16px; font-weight: 700; margin: 0 0 4px; }
+  .legend-header p { font-size: 12px; color: var(--grey-700); margin: 0; }
+  .tag-table {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr 1.1fr 2fr;
+    font-size: 12px;
+  }
+  .tag-table > div {
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--grey-200);
+    display: flex;
+    align-items: center;
+  }
+  .tag-table .lh {
+    font-weight: 700;
+    background: #F8F9FB;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--grey-700);
+  }
+  .tag-table code {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--primary-blue-400);
+    font-size: 11px;
+  }
+  .tag-pill {
+    display: inline-block;
+    font-size: 12px; font-weight: 700;
+    padding: 4px 10px; border-radius: 4px;
+    color: var(--core-white);
+    line-height: 1.2;
+  }
+  .tag-pill.introductory { background: var(--primary-blue-300); }
+  .tag-pill.welcome { background: var(--primary-blue-400); }
+  .tag-pill.sale { background: var(--sec-blue-500); }
+  .tag-pill.free { background: var(--teal-500); }
+
+  .token-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--grey-700);
+    padding: 2px 6px;
+    background: #F8F9FB;
+    border-radius: 3px;
+    border: 1px solid var(--grey-200);
+    margin-right: 4px;
+    white-space: nowrap;
+  }
+
+  /* ============ DURATION RULES ============ */
+  .duration-rules {
+    margin-top: 24px;
+    background: var(--core-white);
+    border-radius: 8px;
+    border: 1px solid var(--grey-200);
+    overflow: hidden;
+  }
+  .dur-tables {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .dur-table {
+    padding: 20px 24px;
+    border-right: 1px solid var(--grey-200);
+  }
+  .dur-table:last-child { border-right: none; }
+  .dur-table h3 {
+    font-size: 13px; font-weight: 700; margin: 0 0 4px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .dur-table h3 .archetype-pill {
+    background: var(--sec-blue-50); color: var(--primary-blue-400);
+    font-size: 10px; padding: 3px 7px; border-radius: 3px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .dur-table p.lead { font-size: 11.5px; color: var(--grey-700); margin: 0 0 14px; line-height: 1.5; }
+  .dur-row {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--grey-200);
+    font-size: 12px;
+    align-items: baseline;
+  }
+  .dur-row:last-child { border-bottom: none; }
+  .dur-row .pos {
+    font-size: 10.5px; color: var(--grey-500); text-transform: uppercase;
+    letter-spacing: 0.04em; font-weight: 700;
+  }
+  .dur-row .tpl { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--grey-900); }
+
+  /* ============ RULES SECTION ============ */
+  .rules {
+    margin-top: 24px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .rule {
+    background: var(--core-white);
+    border-radius: 8px;
+    padding: 18px 20px;
+    border: 1px solid var(--grey-200);
+  }
+  .rule h4 {
+    font-size: 12px; font-weight: 700; margin: 0 0 8px;
+    color: var(--primary-blue-400);
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .rule p { font-size: 12.5px; color: var(--grey-700); margin: 0; line-height: 1.55; }
+  .rule strong { color: var(--core-black); font-weight: 500; }
+
+  footer {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--grey-200);
+    font-size: 11px;
+    color: var(--grey-500);
+    text-align: center;
+  }
+
+  @media print {
+    body { background: white; }
+    .diagram { gap: 40px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+<header>
+  <p class="eyebrow">For B2C — campaign briefing reference · v2</p>
+  <h1>Order summary · variable map</h1>
+  <p class="lede">Each numbered piece of the card on the left is filled by a corresponding data field on the right. When briefing a new campaign, B2C only needs to provide these fields — everything else is auto-generated by the system.</p>
+</header>
+
+<div class="diagram">
+
+  <!-- LEFT COLUMN: callouts 1-4 -->
+  <div class="col-left">
+    <div class="callout">
+      <div class="num">1</div>
+      <div class="label">Plan</div>
+      <h3>What the user is buying</h3>
+      <p>Comes from the product catalog. Doesn't change between campaigns.</p>
+      <div class="fields"><code>
+        plan_name: <span class="v">"Standard: Annual"</span><br/>
+        billing_period: <span class="v">"annual"</span>
+      </code></div>
+    </div>
+
+    <div class="callout">
+      <div class="num">2</div>
+      <div class="label">Offer label (the tag)</div>
+      <h3>Who the offer is for</h3>
+      <p>Pick a category — the tag colour follows the category automatically. The four colours signal who the offer is meant for.</p>
+      <div class="fields"><code>
+        category: <span class="v">"welcome_back"</span>  <span class="c">// 5 options</span><br/>
+        text: <span class="v">"Welcome back offer"</span>  <span class="c">// auto</span><br/>
+        <span class="c">// theme is derived from category</span>
+      </code></div>
+    </div>
+
+    <div class="callout auto">
+      <div class="num">3</div>
+      <div class="label">Summary line</div>
+      <h3>Auto-generated · don't write</h3>
+      <p>Composed from the phases below. Saves the team from writing it manually and keeps it consistent across every campaign.</p>
+      <div class="fields"><code>
+        <span class="c">// Template:</span><br/>
+        <span class="c">"{p1.price} for {p1.duration},</span><br/>
+        <span class="c">then {p2.price} for {p2.duration}.</span><br/>
+        <span class="c">Renews at {p3.price}."</span>
+      </code></div>
+    </div>
+
+    <div class="callout">
+      <div class="num">4</div>
+      <div class="label">Phase 1 (first row)</div>
+      <h3>The first billing period</h3>
+      <p>B2C provides only the <strong>data</strong> for this phase. The label "First 3 months" is computed at render time from <code>cycles</code> + <code>billingPeriod</code> + position in the array.</p>
+      <div class="fields"><code>
+        billingPeriod: <span class="v">{ value: 1, unit: "month" }</span><br/>
+        cycles: <span class="v">3</span><br/>
+        price: <span class="v">30</span>, currency: <span class="v">"HKD"</span><br/>
+        isTrial: <span class="v">false</span>, isFree: <span class="v">false</span><br/>
+        originalPrice: <span class="v">null</span>  <span class="c">// no strike</span>
+      </code></div>
+    </div>
+  </div>
+
+  <!-- MIDDLE COLUMN: the card -->
+  <div class="col-mid">
+    <div class="card-wrap">
+      <div class="card">
+        <div class="top-section">
+          <div class="plan-title-row">
+            <p class="plan-title">Standard: Annual</p>
+            <span class="badge">Welcome back offer</span>
+          </div>
+          <p class="plan-sub">HKD30/month for 3 months, then HKD480 for a year. Renews at HKD960/year.</p>
+        </div>
+        <div class="phases">
+          <div class="phase-row">
+            <div class="phase-left">
+              <div class="phase-dot"><svg width="16" height="16"><circle cx="8" cy="8" r="4" fill="#4585FF"/></svg></div>
+              <div class="phase-text">
+                <div class="phase-label">First 3 months</div>
+                <div class="phase-desc">Intro rate · billed monthly</div>
+              </div>
+            </div>
+            <div class="phase-right">
+              <div class="phase-price">HKD30/mo</div>
+            </div>
+          </div>
+          <div class="phase-row">
+            <div class="phase-left">
+              <div class="phase-dot"><svg width="16" height="16"><circle cx="8" cy="8" r="4" fill="#4585FF"/></svg></div>
+              <div class="phase-text">
+                <div class="phase-label">Next year</div>
+                <div class="phase-desc">Discounted annual · 50% off</div>
+              </div>
+            </div>
+            <div class="phase-right">
+              <div class="phase-price">HKD480</div>
+              <div class="phase-compare">HKD960</div>
+            </div>
+          </div>
+          <div class="phase-row">
+            <div class="phase-left">
+              <div class="phase-dot"><svg width="16" height="16"><circle cx="8" cy="8" r="3.5" fill="none" stroke="#888888" stroke-width="1.4"/></svg></div>
+              <div class="phase-text">
+                <div class="phase-label" style="color: var(--grey-700)">After that, every year</div>
+                <div class="phase-desc muted">Standard rate · renews yearly</div>
+              </div>
+            </div>
+            <div class="phase-right">
+              <div class="phase-price" style="color: var(--grey-700)">HKD960/yr</div>
+            </div>
+          </div>
+        </div>
+        <div class="toggle-row">
+          <svg width="8" height="4"><path d="M0 4 L4 0 L8 4" stroke="#2C4692" stroke-width="1.2" fill="none"/></svg>
+          <div class="toggle-text">Hide billing details</div>
+        </div>
+        <div class="due-row">
+          <div class="due-label">Due today</div>
+          <div class="due-right">
+            <span class="due-strike">HKD85</span>
+            <span class="due-amount">HKD30.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- positional markers -->
+      <div class="marker" style="top: 14px; left: -11px;">1</div>
+      <div class="marker" style="top: 14px; right: -11px;">2</div>
+      <div class="marker" style="top: 56px; left: -11px;">3</div>
+      <div class="marker" style="top: 102px; left: -11px;">4</div>
+      <div class="marker" style="top: 156px; left: -11px;">5</div>
+      <div class="marker" style="top: 208px; left: -11px;">6</div>
+      <div class="marker" style="bottom: 64px; left: -11px;">7</div>
+      <div class="marker" style="bottom: 12px; right: -11px;">8</div>
+    </div>
+  </div>
+
+  <!-- RIGHT COLUMN: callouts 5-8 -->
+  <div class="col-right">
+    <div class="callout">
+      <div class="num">5</div>
+      <div class="label">Phase 2 (middle row)</div>
+      <h3>Mid-stage discounted period</h3>
+      <p>Setting <code>originalPrice</code> enables the strikethrough. The "50% off" text is <strong>auto-computed</strong> from the comparison. Label "Next year" is computed because this entry is in the middle of the array.</p>
+      <div class="fields"><code>
+        billingPeriod: <span class="v">{ value: 1, unit: "year" }</span><br/>
+        cycles: <span class="v">1</span><br/>
+        price: <span class="v">480</span><br/>
+        originalPrice: <span class="v">960</span>  <span class="c">// → strike + auto %</span>
+      </code></div>
+    </div>
+
+    <div class="callout">
+      <div class="num">6</div>
+      <div class="label">Phase 3 (last row)</div>
+      <h3>Standard rate (after promo)</h3>
+      <p>Last entry in the array — renderer applies muted styling automatically and shows label "After that, every year". <strong>Always include this entry</strong> — disclosing renewal price is legally required.</p>
+      <div class="fields"><code>
+        billingPeriod: <span class="v">{ value: 1, unit: "year" }</span><br/>
+        cycles: <span class="v">∞</span>  <span class="c">// ongoing</span><br/>
+        price: <span class="v">960</span><br/>
+        isTrial: <span class="v">false</span>, isFree: <span class="v">false</span>
+      </code></div>
+    </div>
+
+    <div class="callout auto">
+      <div class="num">7</div>
+      <div class="label">Descriptor under each row</div>
+      <h3>Auto-generated · locked copy</h3>
+      <p>Pulled from a fixed lookup table by phase kind + billing period. <strong>B2C cannot edit this copy</strong> — keeps language consistent across all campaigns.</p>
+      <div class="fields"><code>
+        <span class="c">intro × monthly →</span><br/>
+        &nbsp;&nbsp;"Intro rate · billed monthly"<br/>
+        <span class="c">discounted × annual →</span><br/>
+        &nbsp;&nbsp;"Discounted annual · {N}% off"
+      </code></div>
+    </div>
+
+    <div class="callout">
+      <div class="num">8</div>
+      <div class="label">Due today</div>
+      <h3>What hits the card now</h3>
+      <p>Always shows the first phase's first charge. Strike-through is optional. Tax breakdown appears as a sub-line if applicable.</p>
+      <div class="fields"><code>
+        amount_display: <span class="v">"HKD30.00"</span><br/>
+        compare_at_display: <span class="v">"HKD85"</span>  <span class="c">// optional</span><br/>
+        tax_breakdown: <span class="v">null</span>  <span class="c">// only if VAT</span>
+      </code></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============ TAG SYSTEM ============ -->
+
+<div class="tag-legend">
+  <div class="legend-header">
+    <h2>The 4 tag colours · signalling who the offer is for</h2>
+    <p>Tag colour follows the offer category. B2C picks one of these when briefing a campaign — text and colour are derived automatically.</p>
+  </div>
+  <div class="tag-table">
+    <div class="lh">Category</div>
+    <div class="lh">Default tag text</div>
+    <div class="lh">Token</div>
+    <div class="lh">When to use</div>
+
+    <div><code>introductory</code></div>
+    <div><span class="tag-pill introductory">Introductory offer</span></div>
+    <div><span class="token-chip">PrimaryBlue/300</span><br><span class="token-chip" style="margin-top: 4px;">#788AC4</span></div>
+    <div>Default offer for <strong>new users</strong></div>
+
+    <div><code>welcome_back</code></div>
+    <div><span class="tag-pill welcome">Welcome back offer</span></div>
+    <div><span class="token-chip">PrimaryBlue/400</span><br><span class="token-chip" style="margin-top: 4px;">#2C4692</span></div>
+    <div>Offers for <strong>returning users</strong> or renewals</div>
+
+    <div><code>sale</code></div>
+    <div><span class="tag-pill sale">Sale</span></div>
+    <div><span class="token-chip">SecondaryBlue/500</span><br><span class="token-chip" style="margin-top: 4px;">#4585FF</span></div>
+    <div>Generic discount campaigns, not user-segmented</div>
+
+    <div><code>free_trial</code></div>
+    <div><span class="tag-pill free">Free trial</span></div>
+    <div><span class="token-chip">Core/Teal</span><br><span class="token-chip" style="margin-top: 4px;">#2AA191</span></div>
+    <div>Phase 1 costs <strong>nothing</strong></div>
+
+    <div style="border-bottom: none;"><code>custom</code></div>
+    <div style="border-bottom: none;"><em style="color: var(--grey-500)">B2C provides ≤20 chars</em></div>
+    <div style="border-bottom: none;"><em style="color: var(--grey-500)">Picks one of the 4 themes above</em></div>
+    <div style="border-bottom: none;">Named campaigns like "Black Friday", "Lunar New Year"</div>
+  </div>
+</div>
+
+<!-- ============ DURATION WORDING RULES ============ -->
+
+<div class="duration-rules">
+  <div class="legend-header">
+    <h2>The position rule · label is derived, not stored</h2>
+    <p>The duration label ("First 3 months", "Next year", "After that, every year") is NOT a field on the billing entry. It is <strong>computed at render time</strong> from each entry's position in the array. This means the same entry data can render differently depending on where it sits in the list.</p>
+  </div>
+  <div class="dur-tables" style="grid-template-columns: 1fr 1fr 1fr;">
+    <div class="dur-table">
+      <h3>Case 1 · single entry <span class="archetype-pill">[A]</span></h3>
+      <p class="lead">Plain plan, no campaign. The only entry is treated as last.</p>
+      <div class="dur-row"><span class="pos">A · alone</span><span class="tpl">After that, every {X}</span></div>
+    </div>
+    <div class="dur-table">
+      <h3>Case 2 · three entries <span class="archetype-pill">[B, A, C]</span></h3>
+      <p class="lead">Stepped campaign with intro, mid-discount, and renewal.</p>
+      <div class="dur-row"><span class="pos">B · 1st</span><span class="tpl">First {X}</span></div>
+      <div class="dur-row"><span class="pos">A · middle</span><span class="tpl">Next {X}</span></div>
+      <div class="dur-row"><span class="pos">C · last</span><span class="tpl">After that, every {X}</span></div>
+    </div>
+    <div class="dur-table">
+      <h3>Case 3 · two entries <span class="archetype-pill">[B, A]</span></h3>
+      <p class="lead">Standard new-user offer: intro then renewal.</p>
+      <div class="dur-row"><span class="pos">B · 1st</span><span class="tpl">First {X}</span></div>
+      <div class="dur-row"><span class="pos">A · last</span><span class="tpl">After that, every {X}</span></div>
+    </div>
+  </div>
+  <div style="padding: 18px 24px; background: #F8F9FB; border-top: 1px solid var(--grey-200);">
+    <p style="font-size: 12px; color: var(--grey-700); margin: 0 0 8px; font-weight: 700;">{X} is computed from billingPeriod × cycles</p>
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; font-size: 11.5px; color: var(--grey-700);">
+      <div><strong style="color: var(--grey-900);">"month"</strong><br/>value:1, unit:month, cycles:1</div>
+      <div><strong style="color: var(--grey-900);">"3 months"</strong><br/>value:1, unit:month, cycles:3<br/><em>OR</em><br/>value:3, unit:month, cycles:1</div>
+      <div><strong style="color: var(--grey-900);">"year"</strong><br/>value:1, unit:year, cycles:1</div>
+      <div><strong style="color: var(--grey-900);">"2 years"</strong><br/>value:1, unit:year, cycles:2<br/><em>OR</em><br/>value:2, unit:year, cycles:1</div>
+    </div>
+    <p style="font-size: 11.5px; color: var(--grey-500); margin: 12px 0 0; line-height: 1.5;">
+      <strong style="color: var(--grey-700);">Note:</strong> Use "year" (singular, no number) when the duration equals 1 year. Use "2 years", "3 months", etc. for multi-unit durations. Avoid "12 months" — say "year" instead.
+    </p>
+  </div>
+</div>
+
+<div class="duration-rules" style="margin-top: 24px;">
+  <div class="legend-header">
+    <h2>Two ways to price a multi-month phase</h2>
+    <p>When a phase spans multiple months, there are two distinct billing shapes. They look different to the user and bill the user differently.</p>
+  </div>
+  <div class="dur-tables">
+    <div class="dur-table">
+      <h3>Monthly recurring <span class="archetype-pill" style="background: #ECF3FF; color: #2C4692;">cycles &gt; 1</span></h3>
+      <p class="lead">User is charged each month for the duration of the phase. Card is hit multiple times.</p>
+      <div style="background: #F8F9FB; padding: 12px; border-radius: 4px; margin: 10px 0;">
+        <code style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--primary-blue-400); line-height: 1.7;">
+          billingPeriod: { value: 1, unit: "month" }<br/>
+          cycles: 3<br/>
+          price: 30
+        </code>
+      </div>
+      <p style="font-size: 12px; color: var(--grey-700); margin: 8px 0 0;">Displays as <strong style="color: var(--grey-900);">HKD30/mo</strong> with descriptor <em>"Intro rate · billed monthly"</em></p>
+    </div>
+    <div class="dur-table">
+      <h3>Lump-sum upfront <span class="archetype-pill" style="background: #FFF4CD; color: #7A5800;">cycles = 1</span></h3>
+      <p class="lead">User is charged once for the whole phase. Card is hit a single time, then nothing until the next phase begins.</p>
+      <div style="background: #F8F9FB; padding: 12px; border-radius: 4px; margin: 10px 0;">
+        <code style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--primary-blue-400); line-height: 1.7;">
+          billingPeriod: { value: 3, unit: "month" }<br/>
+          cycles: 1<br/>
+          price: 90
+        </code>
+      </div>
+      <p style="font-size: 12px; color: var(--grey-700); margin: 8px 0 0;">Displays as <strong style="color: var(--grey-900);">HKD90</strong> (no /mo suffix) with descriptor <em>"One-time intro charge"</em></p>
+    </div>
+  </div>
+  <div style="padding: 14px 24px; background: #FFFDF5; border-top: 1px solid var(--warn-line);">
+    <p style="font-size: 12px; color: var(--warn-ink); margin: 0; line-height: 1.5;">
+      <strong>Why both exist:</strong> Marketing sometimes runs "HKD30/month for 3 months" as a softer entry price (low first hit, recurring). Other times they run "HKD90 for the first 3 months" as a commitment offer (slightly cheaper in total, but locks the user in upfront). The card UI shows both honestly so the user knows what hits their card and when.
+    </p>
+  </div>
+</div>
+
+<!-- ============ RULES ============ -->
+
+<div class="rules">
+  <div class="rule">
+    <h4>What B2C provides</h4>
+    <p>Plan ID, offer category, custom tag text (if any), and the phases — kind, duration, price, optional compare-at, optional tax.</p>
+  </div>
+  <div class="rule">
+    <h4>What's auto-generated</h4>
+    <p><strong>Summary line</strong>, <strong>descriptor</strong>, <strong>duration label (computed from array position)</strong>, <strong>% off calculations</strong>, <strong>tag colour</strong> (from category), and <strong>muted styling on the last entry</strong>.</p>
+  </div>
+  <div class="rule">
+    <h4>What's locked</h4>
+    <p>The descriptor copy library. The duration wording. The strikethrough behaviour. The dot/colour rules. The card layout. Changes need design + dev review.</p>
+  </div>
+</div>
+
+<footer>
+  Plan summary spec · prepared by UX for B2C onboarding · SCMP Subscription 3.0
+</footer>
+
+</div>
+
+</body>
+</html>
