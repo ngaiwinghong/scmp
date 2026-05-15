@@ -11,19 +11,23 @@
   :root {
     --core-black: #000000;
     --core-white: #FFFFFF;
-    --core-dodgerblue: #4585FF;
-    --core-actionblue: #2C4692;
     --grey-900: #333333;
     --grey-700: #666666;
     --grey-500: #888888;
     --grey-200: #DFDFDF;
+
+    --primary-blue-300: #788AC4;
+    --primary-blue-400: #2C4692;
+    --primary-blue-500: #001246;
     --sec-blue-50: #ECF3FF;
     --sec-blue-200: #B5CEFF;
-    --warn-bg: #FFF7E0;
-    --warn-line: #E5B800;
-    --warn-ink: #7A5C00;
-    --success-bg: #E4F5EC;
-    --success-ink: #1F7A4D;
+    --sec-blue-500: #4585FF;
+    --teal-100: #D4ECE9;
+    --teal-500: #2AA191;
+
+    --warn-bg: #FFF4CD;
+    --warn-line: #FFCA05;
+    --warn-ink: #7A5800;
   }
   * { box-sizing: border-box; }
   html, body {
@@ -38,7 +42,7 @@
   header { margin-bottom: 32px; }
   .eyebrow {
     font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
-    text-transform: uppercase; color: var(--core-actionblue); margin: 0 0 6px;
+    text-transform: uppercase; color: var(--primary-blue-400); margin: 0 0 6px;
   }
   h1 { font-size: 28px; font-weight: 700; margin: 0 0 8px; }
   .lede { font-size: 15px; color: var(--grey-700); line-height: 1.55; max-width: 720px; margin: 0; }
@@ -74,9 +78,10 @@
   }
   .plan-title { font-size: 18px; font-weight: 700; margin: 0; line-height: 1.2; }
   .badge {
-    font-size: 12px; font-weight: 700; padding: 4px;
-    border-radius: 4px; line-height: 1; white-space: nowrap;
-    background: var(--sec-blue-50); color: var(--core-dodgerblue);
+    font-size: 12px; font-weight: 700; padding: 4px 8px;
+    border-radius: 4px; line-height: 1.2; white-space: nowrap;
+    color: var(--core-white);
+    background: var(--primary-blue-400); /* welcome-back, for the demo card */
   }
   .plan-sub {
     font-size: 14px; font-weight: 400; line-height: 18px;
@@ -92,13 +97,13 @@
   .phase-dot { flex-shrink: 0; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; }
   .phase-text { display: flex; flex-direction: column; }
   .phase-label { font-size: 14px; line-height: 18px; }
-  .phase-desc { font-size: 12px; line-height: 18px; color: var(--core-dodgerblue); }
+  .phase-desc { font-size: 12px; line-height: 18px; color: var(--sec-blue-500); }
   .phase-desc.muted { color: var(--grey-700); }
   .phase-right { display: flex; flex-direction: column; align-items: flex-end; }
   .phase-price { font-size: 14px; line-height: 18px; white-space: nowrap; }
   .phase-compare { font-size: 12px; line-height: 18px; color: var(--grey-700); text-decoration: line-through; }
   .toggle-row { display: flex; gap: 8px; align-items: center; }
-  .toggle-text { font-size: 12px; color: var(--core-actionblue); }
+  .toggle-text { font-size: 12px; color: var(--primary-blue-400); }
   .due-row {
     display: flex; justify-content: space-between; align-items: center;
     padding-top: 16px;
@@ -113,7 +118,7 @@
   .marker {
     position: absolute;
     width: 22px; height: 22px;
-    background: var(--core-actionblue);
+    background: var(--primary-blue-400);
     color: #FFF;
     border-radius: 50%;
     font-size: 11px;
@@ -127,7 +132,7 @@
   /* ============ CALLOUT CARDS ============ */
   .callout {
     background: var(--core-white);
-    border-left: 3px solid var(--core-dodgerblue);
+    border-left: 3px solid var(--sec-blue-500);
     border-radius: 6px;
     padding: 14px 16px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.04);
@@ -138,7 +143,7 @@
     top: -10px;
     left: -10px;
     width: 22px; height: 22px;
-    background: var(--core-actionblue);
+    background: var(--primary-blue-400);
     color: #FFF;
     border-radius: 50%;
     font-size: 11px; font-weight: 700;
@@ -158,7 +163,7 @@
   .callout .fields code {
     font-family: 'JetBrains Mono', monospace;
     font-size: 11px;
-    color: var(--core-actionblue);
+    color: var(--primary-blue-400);
     display: block;
     line-height: 1.7;
   }
@@ -169,8 +174,8 @@
   .callout.auto .num { background: var(--warn-line); color: var(--core-black); }
   .callout.auto h3 { color: var(--warn-ink); }
 
-  /* ============ LEGEND TABLE ============ */
-  .legend {
+  /* ============ TAG SYSTEM (legend) ============ */
+  .tag-legend {
     margin-top: 56px;
     background: var(--core-white);
     border-radius: 8px;
@@ -184,18 +189,18 @@
   }
   .legend-header h2 { font-size: 16px; font-weight: 700; margin: 0 0 4px; }
   .legend-header p { font-size: 12px; color: var(--grey-700); margin: 0; }
-  .legend-table {
+  .tag-table {
     display: grid;
-    grid-template-columns: 1.4fr 1fr 0.8fr 2fr;
+    grid-template-columns: 1.3fr 1fr 1.1fr 2fr;
     font-size: 12px;
   }
-  .legend-table > div {
-    padding: 12px 24px;
+  .tag-table > div {
+    padding: 14px 24px;
     border-bottom: 1px solid var(--grey-200);
     display: flex;
     align-items: center;
   }
-  .legend-table .lh {
+  .tag-table .lh {
     font-weight: 700;
     background: #F8F9FB;
     font-size: 11px;
@@ -203,21 +208,80 @@
     letter-spacing: 0.05em;
     color: var(--grey-700);
   }
-  .legend-table code {
+  .tag-table code {
     font-family: 'JetBrains Mono', monospace;
-    color: var(--core-actionblue);
+    color: var(--primary-blue-400);
     font-size: 11px;
   }
-  .pill {
-    display: inline-block; font-size: 11px; padding: 3px 8px;
-    border-radius: 3px; font-weight: 500;
+  .tag-pill {
+    display: inline-block;
+    font-size: 12px; font-weight: 700;
+    padding: 4px 10px; border-radius: 4px;
+    color: var(--core-white);
+    line-height: 1.2;
   }
-  .pill.blue { background: var(--sec-blue-50); color: var(--core-dodgerblue); }
-  .pill.green { background: var(--success-bg); color: var(--success-ink); }
+  .tag-pill.introductory { background: var(--primary-blue-300); }
+  .tag-pill.welcome { background: var(--primary-blue-400); }
+  .tag-pill.sale { background: var(--sec-blue-500); }
+  .tag-pill.free { background: var(--teal-500); }
+
+  .token-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--grey-700);
+    padding: 2px 6px;
+    background: #F8F9FB;
+    border-radius: 3px;
+    border: 1px solid var(--grey-200);
+    margin-right: 4px;
+    white-space: nowrap;
+  }
+
+  /* ============ DURATION RULES ============ */
+  .duration-rules {
+    margin-top: 24px;
+    background: var(--core-white);
+    border-radius: 8px;
+    border: 1px solid var(--grey-200);
+    overflow: hidden;
+  }
+  .dur-tables {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .dur-table {
+    padding: 20px 24px;
+    border-right: 1px solid var(--grey-200);
+  }
+  .dur-table:last-child { border-right: none; }
+  .dur-table h3 {
+    font-size: 13px; font-weight: 700; margin: 0 0 4px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .dur-table h3 .archetype-pill {
+    background: var(--sec-blue-50); color: var(--primary-blue-400);
+    font-size: 10px; padding: 3px 7px; border-radius: 3px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .dur-table p.lead { font-size: 11.5px; color: var(--grey-700); margin: 0 0 14px; line-height: 1.5; }
+  .dur-row {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--grey-200);
+    font-size: 12px;
+    align-items: baseline;
+  }
+  .dur-row:last-child { border-bottom: none; }
+  .dur-row .pos {
+    font-size: 10.5px; color: var(--grey-500); text-transform: uppercase;
+    letter-spacing: 0.04em; font-weight: 700;
+  }
+  .dur-row .tpl { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--grey-900); }
 
   /* ============ RULES SECTION ============ */
   .rules {
-    margin-top: 32px;
+    margin-top: 24px;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 16px;
@@ -230,7 +294,7 @@
   }
   .rule h4 {
     font-size: 12px; font-weight: 700; margin: 0 0 8px;
-    color: var(--core-actionblue);
+    color: var(--primary-blue-400);
     text-transform: uppercase; letter-spacing: 0.05em;
   }
   .rule p { font-size: 12.5px; color: var(--grey-700); margin: 0; line-height: 1.55; }
@@ -256,7 +320,7 @@
 <div class="page">
 
 <header>
-  <p class="eyebrow">For B2C — campaign briefing reference</p>
+  <p class="eyebrow">For B2C — campaign briefing reference · v2</p>
   <h1>Order summary · variable map</h1>
   <p class="lede">Each numbered piece of the card on the left is filled by a corresponding data field on the right. When briefing a new campaign, B2C only needs to provide these fields — everything else is auto-generated by the system.</p>
 </header>
@@ -279,20 +343,20 @@
     <div class="callout">
       <div class="num">2</div>
       <div class="label">Offer label (the tag)</div>
-      <h3>How the campaign is named</h3>
-      <p>B2C picks the category. Tag text is auto-filled unless using <strong>custom</strong>, which lets B2C write up to 20 characters.</p>
+      <h3>Who the offer is for</h3>
+      <p>Pick a category — the tag colour follows the category automatically. The four colours signal who the offer is meant for.</p>
       <div class="fields"><code>
-        category: <span class="v">"custom"</span>  <span class="c">// 5 options</span><br/>
-        text: <span class="v">"Black Friday Deal"</span><br/>
-        theme: <span class="v">"blue"</span>  <span class="c">// green = free trial only</span>
+        category: <span class="v">"welcome_back"</span>  <span class="c">// 5 options</span><br/>
+        text: <span class="v">"Welcome back offer"</span>  <span class="c">// auto</span><br/>
+        <span class="c">// theme is derived from category</span>
       </code></div>
     </div>
 
     <div class="callout auto">
       <div class="num">3</div>
       <div class="label">Summary line</div>
-      <h3>Auto-generated · DO NOT WRITE</h3>
-      <p>Composed from the phases below. Saves the team from writing it manually and ensures consistency.</p>
+      <h3>Auto-generated · don't write</h3>
+      <p>Composed from the phases below. Saves the team from writing it manually and keeps it consistent across every campaign.</p>
       <div class="fields"><code>
         <span class="c">// Template:</span><br/>
         <span class="c">"{p1.price} for {p1.duration},</span><br/>
@@ -304,11 +368,11 @@
     <div class="callout">
       <div class="num">4</div>
       <div class="label">Phase 1 (first row)</div>
-      <h3>Initial billing period</h3>
-      <p>The first phase is what the user pays first. Marketing decides the price, duration, and kind.</p>
+      <h3>The first billing period</h3>
+      <p>What the user pays first. B2C sets the price, duration, and kind. The label "First 3 months" is generated from the duration.</p>
       <div class="fields"><code>
         kind: <span class="v">"intro"</span>  <span class="c">// 4 options</span><br/>
-        duration_label: <span class="v">"First 3 months"</span><br/>
+        duration: <span class="v">3 months</span><br/>
         price: <span class="v">HKD30 / month</span><br/>
         compare_at: <span class="v">null</span>  <span class="c">// no strike here</span>
       </code></div>
@@ -322,7 +386,7 @@
         <div class="top-section">
           <div class="plan-title-row">
             <p class="plan-title">Standard: Annual</p>
-            <span class="badge">Black Friday Deal</span>
+            <span class="badge">Welcome back offer</span>
           </div>
           <p class="plan-sub">HKD30/month for 3 months, then HKD480/year. Renews at HKD960/year.</p>
         </div>
@@ -395,13 +459,13 @@
     <div class="callout">
       <div class="num">5</div>
       <div class="label">Phase 2 (middle row)</div>
-      <h3>Discounted period</h3>
+      <h3>Mid-stage discounted period</h3>
       <p>Setting <code>compare_at</code> enables the strikethrough. The "50% off" text is <strong>auto-computed</strong> from the comparison.</p>
       <div class="fields"><code>
         kind: <span class="v">"discounted"</span><br/>
-        duration_label: <span class="v">"Next 12 months"</span><br/>
+        duration: <span class="v">12 months</span><br/>
         price: <span class="v">HKD480 / year</span><br/>
-        compare_at: <span class="v">HKD960</span>  <span class="c">// → strikethrough + auto %</span>
+        compare_at: <span class="v">HKD960</span>  <span class="c">// → strike + auto %</span>
       </code></div>
     </div>
 
@@ -409,10 +473,10 @@
       <div class="num">6</div>
       <div class="label">Phase 3 (last row)</div>
       <h3>Standard rate (after promo)</h3>
-      <p>Setting <code>is_post_contract: true</code> automatically applies the muted grey styling and hollow dot. <strong>Always include this row</strong> — it's legally required to disclose renewal price.</p>
+      <p>Setting <code>is_post_contract: true</code> automatically applies the muted styling and hollow dot. <strong>Always include this row</strong> — disclosing renewal price is legally required.</p>
       <div class="fields"><code>
         kind: <span class="v">"standard"</span><br/>
-        duration_label: <span class="v">"After that, every year"</span><br/>
+        duration: <span class="v">ongoing</span><br/>
         is_post_contract: <span class="v">true</span>  <span class="c">// → muted</span>
       </code></div>
     </div>
@@ -445,43 +509,67 @@
 
 </div>
 
-<!-- ============ LEGEND TABLE ============ -->
+<!-- ============ TAG SYSTEM ============ -->
 
-<div class="legend">
+<div class="tag-legend">
   <div class="legend-header">
-    <h2>The 5 offer label categories</h2>
-    <p>B2C picks one of these when briefing a campaign. Tag text and colour are derived automatically.</p>
+    <h2>The 4 tag colours · signalling who the offer is for</h2>
+    <p>Tag colour follows the offer category. B2C picks one of these when briefing a campaign — text and colour are derived automatically.</p>
   </div>
-  <div class="legend-table">
+  <div class="tag-table">
     <div class="lh">Category</div>
     <div class="lh">Default tag text</div>
-    <div class="lh">Colour</div>
+    <div class="lh">Token</div>
     <div class="lh">When to use</div>
 
     <div><code>introductory</code></div>
-    <div>Introductory price</div>
-    <div><span class="pill blue">Blue</span></div>
-    <div>Default new-user discount on a standard plan</div>
+    <div><span class="tag-pill introductory">Introductory offer</span></div>
+    <div><span class="token-chip">PrimaryBlue/300</span><br><span class="token-chip" style="margin-top: 4px;">#788AC4</span></div>
+    <div>Default offer for <strong>new users</strong></div>
 
-    <div><code>trial_paid</code></div>
-    <div>Trial price</div>
-    <div><span class="pill blue">Blue</span></div>
-    <div>First phase is reduced but not free (e.g. HKD30/mo trial)</div>
-
-    <div><code>trial_free</code></div>
-    <div>Free trial</div>
-    <div><span class="pill green">Green</span></div>
-    <div>First phase costs nothing</div>
+    <div><code>welcome_back</code></div>
+    <div><span class="tag-pill welcome">Welcome back offer</span></div>
+    <div><span class="token-chip">PrimaryBlue/400</span><br><span class="token-chip" style="margin-top: 4px;">#2C4692</span></div>
+    <div>Offers for <strong>returning users</strong> or renewals</div>
 
     <div><code>sale</code></div>
-    <div>Sale</div>
-    <div><span class="pill blue">Blue</span></div>
-    <div>Generic discount, not new-user-specific</div>
+    <div><span class="tag-pill sale">Sale</span></div>
+    <div><span class="token-chip">SecondaryBlue/500</span><br><span class="token-chip" style="margin-top: 4px;">#4585FF</span></div>
+    <div>Generic discount campaigns, not user-segmented</div>
+
+    <div><code>free_trial</code></div>
+    <div><span class="tag-pill free">Free trial</span></div>
+    <div><span class="token-chip">Core/Teal</span><br><span class="token-chip" style="margin-top: 4px;">#2AA191</span></div>
+    <div>Phase 1 costs <strong>nothing</strong></div>
 
     <div style="border-bottom: none;"><code>custom</code></div>
     <div style="border-bottom: none;"><em style="color: var(--grey-500)">B2C provides ≤20 chars</em></div>
-    <div style="border-bottom: none;"><span class="pill blue">Blue</span></div>
+    <div style="border-bottom: none;"><em style="color: var(--grey-500)">Picks one of the 4 themes above</em></div>
     <div style="border-bottom: none;">Named campaigns like "Black Friday", "Lunar New Year"</div>
+  </div>
+</div>
+
+<!-- ============ DURATION WORDING RULES ============ -->
+
+<div class="duration-rules">
+  <div class="legend-header">
+    <h2>Duration label · locked wording</h2>
+    <p>Phase labels follow a fixed template based on the number of phases. The 2-phase and 3-phase cards share the same first and last wording so the user always sees the same renewal phrasing.</p>
+  </div>
+  <div class="dur-tables">
+    <div class="dur-table">
+      <h3>2-phase card <span class="archetype-pill">e.g. simple intro</span></h3>
+      <p class="lead">For standard new-user offers where there are two billing periods only.</p>
+      <div class="dur-row"><span class="pos">First</span><span class="tpl">First {X}</span></div>
+      <div class="dur-row"><span class="pos">Last</span><span class="tpl">After that, every {X}</span></div>
+    </div>
+    <div class="dur-table">
+      <h3>3-phase card <span class="archetype-pill">stepped or trial</span></h3>
+      <p class="lead">For stepped offers and free trials where the user moves through three billing periods.</p>
+      <div class="dur-row"><span class="pos">First</span><span class="tpl">First {X}</span></div>
+      <div class="dur-row"><span class="pos">Middle</span><span class="tpl">Next {X}</span></div>
+      <div class="dur-row"><span class="pos">Last</span><span class="tpl">After that, every {X}</span></div>
+    </div>
   </div>
 </div>
 
@@ -494,11 +582,11 @@
   </div>
   <div class="rule">
     <h4>What's auto-generated</h4>
-    <p><strong>Summary line</strong>, <strong>descriptor under each row</strong>, <strong>% off calculations</strong>, <strong>tag colour</strong> (except free trial → green), and the muted styling on post-contract rows.</p>
+    <p><strong>Summary line</strong>, <strong>descriptor under each row</strong>, <strong>duration labels</strong>, <strong>% off calculations</strong>, <strong>tag colour</strong> (from category), and the muted styling on post-contract rows.</p>
   </div>
   <div class="rule">
     <h4>What's locked</h4>
-    <p>The descriptor copy library — to keep voice consistent. The strikethrough behaviour. The dot/colour rules. The card layout. Changes need design + dev review.</p>
+    <p>The descriptor copy library. The duration wording. The strikethrough behaviour. The dot/colour rules. The card layout. Changes need design + dev review.</p>
   </div>
 </div>
 
