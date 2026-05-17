@@ -310,6 +310,20 @@
     Custom · Black Friday
     <div class="sub">Override text, sale theme</div>
   </button>
+
+  <h2>Non-standard periods</h2>
+  <button class="scenario-btn" data-scenario="edge-7day-trial">
+    ✦ 7-day trial
+    <div class="sub">billed every 7 days</div>
+  </button>
+  <button class="scenario-btn" data-scenario="edge-2month">
+    ✦ Every 2 months
+    <div class="sub">bimonthly cadence</div>
+  </button>
+  <button class="scenario-btn" data-scenario="edge-3year">
+    ✦ 3-year plan
+    <div class="sub">multi-year renewal</div>
+  </button>
 </aside>
 
 <main class="stage">
@@ -371,77 +385,96 @@
 </svg>
 
 <script>
-const DESCRIPTOR_TABLE = {
-  'free|any': 'Free trial · cancel anytime',
-  'intro|monthly': 'Intro rate · billed monthly',
-  'intro|annual': 'Introductory rate · {n}% off',
-  'intro|lump_sum': 'One-time intro charge',
-  'discounted|monthly': 'Discounted rate · billed monthly',
-  'discounted|annual': 'Discounted annual · {n}% off',
-  'discounted|lump_sum': 'Discounted block · {n}% off',
-  'standard|monthly': 'Standard rate · renews monthly',
-  'standard|annual': 'Standard rate · renews yearly',
-  'standard|lump_sum': 'Standard rate · billed in full',
+// =====================================================================
+// COMPOSITIONAL PERIOD ENGINE
+// ---------------------------------------------------------------------
+// No lookup table keyed on specific cadences. Every string is BUILT from
+// the billing period generically, so 2M / 5M / 3Y / 7D / 15D all work
+// with zero new cases. The only bounded constants are:
+//   - 4 kind names (free | intro | discounted | standard)
+//   - 4 adverb forms for value===1 (daily/weekly/monthly/yearly)
+// Everything else falls back to the fully general "every {value} {unit}s".
+// =====================================================================
+
+// The ONLY special-cased words: the English adverb for a value-of-1 period.
+// These four are genuinely fixed in the language; there is no general rule
+// that produces "monthly" from "month", so they must be listed once.
+const CADENCE_ADVERB = {
+  day:   'daily',
+  week:  'weekly',
+  month: 'monthly',
+  year:  'yearly',
 };
+
+// Pluralize a unit generically: "month" → "months", "day" → "days".
+function pluralUnit(unit, n) {
+  return n === 1 ? unit : `${unit}s`;
+}
+
+// Is this phase a single upfront lump-sum charge?
+// True only when: charged once (cycles===1), spans multiple units (value>1),
+// AND it is NOT the ongoing renewal phase. A renewal phase with
+// {value:3, unit:year, cycles:1} means "bill every 3 years forever",
+// not "one charge then done".
+function isLumpSum(phase) {
+  const value = phase.billing_value || 1;
+  const cycles = phase.cycles || 1;
+  return cycles === 1 && value > 1 && !phase.is_post_contract;
+}
+
+// "how often the card is charged" — used in cadence contexts.
+function cadencePhrase(phase) {
+  const value = phase.billing_value || 1;
+  const unit  = phase.billing_unit || 'month';
+
+  if (isLumpSum(phase)) return 'once';
+  if (value === 1) return CADENCE_ADVERB[unit] || `every ${unit}`;
+  return `every ${value} ${pluralUnit(unit, value)}`;  // general fallback
+}
+
+// "how long this phase lasts" — used in span contexts (First X / Next X).
+//   one billing period of {1, month}, cycles 3   → "3 months"
+//   one lump period of {3, month}, cycles 1       → "3 months"
+//   {1, year}, cycles 1                           → "year"
+//   {1, year}, cycles 2                           → "2 years"
+//   {2, month}, cycles 2                          → "4 months"
+//   {7, day}, cycles 1                            → "7 days"
+function spanPhrase(phase) {
+  const value = phase.billing_value || 1;
+  const unit  = phase.billing_unit || 'month';
+  const cycles = phase.cycles || 1;
+
+  const totalUnits = value * cycles;          // works for ANY unit
+  if (totalUnits === 1) return unit;          // "month", "year", "day"
+  return `${totalUnits} ${pluralUnit(unit, totalUnits)}`;  // "3 months", "7 days"
+}
+
+// Short price suffix. Generic: value===1 gets the compact /mo /yr /wk /day,
+// everything else (and lump sums) shows no suffix because the span is stated
+// in the duration label instead.
+const SUFFIX = { day: '/day', week: '/wk', month: '/mo', year: '/yr' };
 
 function fmtMoney(money) {
   if (!money) return '';
   return `${money.currency}${money.amount.toFixed(money.amount % 1 === 0 ? 0 : 2)}`;
 }
 
-function buildDurationLabel(phase, position, totalPhases) {
-  // Two grammatical forms are needed depending on position:
-  //
-  // First / middle entry → "First {span}" / "Next {span}"
-  //   uses the duration *span* (how long this phase lasts):
-  //   "month", "3 months", "year", "2 years"
-  //
-  // Last entry → "After that, every {cadence}"
-  //   uses the billing *cadence* (how often the card is charged going forward):
-  //   "month" or "year" only
-  //
-  // Single entry (both first and last) → treated as last
-
-  const billingValue = phase.billing_value || 1;        // e.g. 1, 3
-  const billingUnit = phase.billing_unit || 'month';    // 'month' or 'year'
-  const cycles = phase.cycles || 1;
-
-  // Total months/years for this phase = billingValue * cycles
-  const totalUnits = billingValue * cycles;
-
-  // The span form: e.g. "month", "3 months", "year", "2 years"
-  const spanWord = totalUnits === 1
-    ? billingUnit                                       // "month" or "year"
-    : `${totalUnits} ${billingUnit}s`;                  // "3 months", "2 years"
-
-  // The cadence form for renewal: always singular ("every month", "every year")
-  const cadenceWord = billingUnit;                      // "month" or "year"
-
-  if (totalPhases === 1) return `After that, every ${cadenceWord}`;
-  if (position === 0) return `First ${spanWord}`;
-  if (position === totalPhases - 1) return `After that, every ${cadenceWord}`;
-  return `Next ${spanWord}`;
-}
-
 function fmtPhasePrice(phase) {
   if (phase.kind === 'free') return 'FREE';
   const base = fmtMoney(phase.price);
 
-  const billingValue = phase.billing_value || 1;
-  const billingUnit = phase.billing_unit || 'month';
-  const cycles = phase.cycles || 1;
+  const value = phase.billing_value || 1;
+  const unit  = phase.billing_unit || 'month';
 
-  // Lump-sum: billing period spans multiple units, charged once (cycles = 1)
-  // e.g. billing_value=3, billing_unit='month', cycles=1 → "HKD90" (no suffix, one upfront charge)
-  if (cycles === 1 && billingValue > 1) {
-    return base;
-  }
+  // Lump-sum block (charged once over multiple units) → no suffix;
+  // the "First 3 months" label carries the duration instead.
+  if (isLumpSum(phase)) return base;
 
-  // Recurring or single-period: show the per-period suffix
-  // billing_value=1, billing_unit='month' → "/mo"
-  // billing_value=1, billing_unit='year'  → "/yr"
-  if (billingUnit === 'month') return `${base}/mo`;
-  if (billingUnit === 'year') return `${base}/yr`;
+  // Recurring single-unit period → compact suffix.
+  if (value === 1 && SUFFIX[unit]) return `${base}${SUFFIX[unit]}`;
+
+  // Recurring multi-unit period (e.g. billed every 2 months) → no suffix;
+  // descriptor says "billed every 2 months" so the price stays clean.
   return base;
 }
 
@@ -450,48 +483,58 @@ function computeDiscount(phase) {
   return Math.round((1 - phase.price.amount / phase.compare_at.amount) * 100);
 }
 
+function buildDurationLabel(phase, position, totalPhases) {
+  // Position decides which grammatical form to use:
+  //   first / middle → span form  ("First 3 months", "Next year")
+  //   last / single  → cadence    ("After that, billed every 2 months")
+  if (totalPhases === 1 || position === totalPhases - 1) {
+    if (isLumpSum(phase)) return 'One-time charge';
+    return `After that, billed ${cadencePhrase(phase)}`;
+  }
+  if (position === 0) return `First ${spanPhrase(phase)}`;
+  return `Next ${spanPhrase(phase)}`;
+}
+
+// The descriptor is now COMPOSED, not looked up:
+//   [rate name from kind]  ·  [cadence OR discount]
+// Rate name is the only kind-driven constant (4 values, genuinely bounded).
+const RATE_NAME = {
+  free:       'Free trial',
+  intro:      'Intro rate',
+  discounted: 'Discounted rate',
+  standard:   'Standard rate',
+};
+
 function buildDescriptor(phase) {
-  // Determine the cadence key for the descriptor lookup
-  let cadenceKey;
-  const billingValue = phase.billing_value || 1;
-  const billingUnit = phase.billing_unit || 'month';
-  const cycles = phase.cycles || 1;
+  const rate = RATE_NAME[phase.kind] || 'Rate';
 
   if (phase.kind === 'free') {
-    cadenceKey = 'any';
-  } else if (cycles === 1 && billingValue > 1) {
-    // Lump-sum charge covering multiple units
-    cadenceKey = 'lump_sum';
-  } else if (billingUnit === 'month') {
-    cadenceKey = 'monthly';
-  } else if (billingUnit === 'year') {
-    cadenceKey = 'annual';
-  } else {
-    cadenceKey = 'monthly';
+    return `${rate} · cancel anytime`;
   }
 
-  const tplKey = `${phase.kind}|${cadenceKey}`;
-  let tpl = DESCRIPTOR_TABLE[tplKey] || '';
-  if (tpl.includes('{n}')) {
-    const pct = computeDiscount(phase);
-    if (pct !== null) tpl = tpl.replace('{n}', pct);
-    else tpl = tpl.split('·')[0].trim();
+  const parts = [rate];
+
+  // If there's a comparison price, lead with the discount — it's the
+  // most marketing-relevant fact. Otherwise describe the billing cadence.
+  const pct = computeDiscount(phase);
+  if (pct !== null && pct > 0) {
+    parts.push(`${pct}% off`);
+  } else if (isLumpSum(phase)) {
+    parts.push('billed once');
+  } else {
+    parts.push(`billed ${cadencePhrase(phase)}`);
   }
-  return tpl;
+  return parts.join(' · ');
 }
 
 function buildPhaseDurationProse(phase) {
-  // The inline-prose form for the summary line.
-  // "HKD30/mo for {3 months}" / "HKD780 for {a year}"
-  // Uses "a year"/"a month" for singular (reads more naturally inside a sentence),
-  // "3 months"/"2 years" for plural.
-  const billingValue = phase.billing_value || 1;
-  const billingUnit = phase.billing_unit || 'month';
-  const cycles = phase.cycles || 1;
-  const totalUnits = billingValue * cycles;
-
-  if (totalUnits === 1) return `a ${billingUnit}`;
-  return `${totalUnits} ${billingUnit}s`;
+  // Sentence form for the summary line: "HKD30/mo for {a month}" /
+  // "HKD480 for {a year}" / "HKD90 for {3 months}".
+  // Reuses the same generic span computation; just prefixes "a/an" for
+  // singular so it reads naturally inside a sentence.
+  const span = spanPhrase(phase);                 // "month", "3 months", "7 days"
+  if (/^\d/.test(span)) return span;              // "3 months" — already fine
+  return /^[aeiou]/i.test(span) ? `an ${span}` : `a ${span}`;  // "a month"
 }
 
 function buildSummaryLine(phases) {
@@ -729,6 +772,43 @@ const SCENARIOS = {
         { sequence: 3, kind: 'standard', billing_value: 1, billing_unit: 'year', cycles: 1, price: { amount: 960, currency: 'HKD' }, compare_at: null, tax: null, is_post_contract: true }
       ],
       due_today: { amount_display: 'HKD30.00', compare_at_display: 'HKD85', tax_breakdown: null }
+    }
+  },
+  'edge-7day-trial': {
+    meta: { label: '✦ 7-day trial → annual', title: 'Non-standard period: 7-day billing', desc: 'Morty\'s edge case. Phase 1 billed every 7 days. The engine produces "billed every 7 days" with zero special-casing — same code path as monthly.', archetype: '3-phase' },
+    data: {
+      plan_name: 'Standard: Annual', billing_period: 'annual',
+      offer_label: { category: 'free_trial', text: 'Free trial', theme: 'free-trial' },
+      phases: [
+        { sequence: 1, kind: 'free', billing_value: 7, billing_unit: 'day', cycles: 1, price: { amount: 0, currency: 'HKD' }, compare_at: null, tax: null, is_post_contract: false },
+        { sequence: 2, kind: 'discounted', billing_value: 1, billing_unit: 'year', cycles: 1, price: { amount: 480, currency: 'HKD' }, compare_at: { amount: 960, currency: 'HKD' }, tax: null, is_post_contract: false },
+        { sequence: 3, kind: 'standard', billing_value: 1, billing_unit: 'year', cycles: 1, price: { amount: 960, currency: 'HKD' }, compare_at: null, tax: null, is_post_contract: true }
+      ],
+      due_today: { amount_display: 'HKD0.00', compare_at_display: null, tax_breakdown: null }
+    }
+  },
+  'edge-2month': {
+    meta: { label: '✦ Billed every 2 months', title: 'Non-standard period: 2-month cadence', desc: 'Phase 1 is billed every 2 months for 3 cycles (6 months total). Descriptor reads "Intro rate · billed every 2 months". No suffix on the price since the cadence is in the descriptor.', archetype: '2-phase' },
+    data: {
+      plan_name: 'Standard: Bimonthly', billing_period: 'custom',
+      offer_label: { category: 'introductory', text: 'Introductory offer', theme: 'introductory' },
+      phases: [
+        { sequence: 1, kind: 'intro', billing_value: 2, billing_unit: 'month', cycles: 3, price: { amount: 120, currency: 'HKD' }, compare_at: { amount: 170, currency: 'HKD' }, tax: null, is_post_contract: false },
+        { sequence: 2, kind: 'standard', billing_value: 2, billing_unit: 'month', cycles: 1, price: { amount: 170, currency: 'HKD' }, compare_at: null, tax: null, is_post_contract: true }
+      ],
+      due_today: { amount_display: 'HKD120.00', compare_at_display: 'HKD170', tax_breakdown: null }
+    }
+  },
+  'edge-3year': {
+    meta: { label: '✦ 3-year plan', title: 'Non-standard period: multi-year', desc: 'A 3-year commitment plan. Last phase renews "every 3 years". The engine handles years exactly like months — no year-specific branch.', archetype: '2-phase' },
+    data: {
+      plan_name: 'Standard: 3-Year', billing_period: 'custom',
+      offer_label: { category: 'sale', text: 'Sale', theme: 'sale' },
+      phases: [
+        { sequence: 1, kind: 'intro', billing_value: 3, billing_unit: 'year', cycles: 1, price: { amount: 2400, currency: 'HKD' }, compare_at: { amount: 2880, currency: 'HKD' }, tax: null, is_post_contract: false },
+        { sequence: 2, kind: 'standard', billing_value: 3, billing_unit: 'year', cycles: 1, price: { amount: 2880, currency: 'HKD' }, compare_at: null, tax: null, is_post_contract: true }
+      ],
+      due_today: { amount_display: 'HKD2400.00', compare_at_display: 'HKD2880', tax_breakdown: null }
     }
   },
 };

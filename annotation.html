@@ -579,15 +579,32 @@
     </div>
   </div>
   <div style="padding: 18px 24px; background: #F8F9FB; border-top: 1px solid var(--grey-200);">
-    <p style="font-size: 12px; color: var(--grey-700); margin: 0 0 8px; font-weight: 700;">{X} is computed from billingPeriod × cycles</p>
-    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; font-size: 11.5px; color: var(--grey-700);">
-      <div><strong style="color: var(--grey-900);">"month"</strong><br/>value:1, unit:month, cycles:1</div>
-      <div><strong style="color: var(--grey-900);">"3 months"</strong><br/>value:1, unit:month, cycles:3<br/><em>OR</em><br/>value:3, unit:month, cycles:1</div>
-      <div><strong style="color: var(--grey-900);">"year"</strong><br/>value:1, unit:year, cycles:1</div>
-      <div><strong style="color: var(--grey-900);">"2 years"</strong><br/>value:1, unit:year, cycles:2<br/><em>OR</em><br/>value:2, unit:year, cycles:1</div>
+    <p style="font-size: 12px; color: var(--grey-700); margin: 0 0 8px; font-weight: 700;">No lookup table — every phrase is composed from billingPeriod</p>
+    <p style="font-size: 11.5px; color: var(--grey-700); margin: 0 0 12px; line-height: 1.55;">
+      The system does <strong>not</strong> store a phrase per cadence. It builds the wording generically so any period works — 7 days, 2 months, 3 years — with no new code. The only fixed words are the four English adverbs for a value of 1.
+    </p>
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; font-size: 11.5px; color: var(--grey-700);">
+      <div>
+        <p style="font-weight: 700; color: var(--grey-900); margin: 0 0 6px;">value = 1 → adverb (only special case)</p>
+        <code style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--primary-blue-400); line-height: 1.8; display: block;">
+          {1, day} &nbsp;&nbsp;→ "billed daily"<br/>
+          {1, week} &nbsp;→ "billed weekly"<br/>
+          {1, month} → "billed monthly"<br/>
+          {1, year} &nbsp;→ "billed yearly"
+        </code>
+      </div>
+      <div>
+        <p style="font-weight: 700; color: var(--grey-900); margin: 0 0 6px;">value &gt; 1 → general fallback</p>
+        <code style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--primary-blue-400); line-height: 1.8; display: block;">
+          {2, month} → "billed every 2 months"<br/>
+          {7, day} &nbsp;→ "billed every 7 days"<br/>
+          {3, year} &nbsp;→ "billed every 3 years"<br/>
+          {15, day} → "billed every 15 days"
+        </code>
+      </div>
     </div>
-    <p style="font-size: 11.5px; color: var(--grey-500); margin: 12px 0 0; line-height: 1.5;">
-      <strong style="color: var(--grey-700);">Two grammatical forms.</strong> First and middle entries use the <strong>total span</strong> ("First 3 months", "Next year") — how long this phase lasts. The last entry uses the <strong>billing cadence</strong> ("After that, every year") — how often the card is charged going forward. Both are derived from the same fields.
+    <p style="font-size: 11.5px; color: var(--grey-500); margin: 14px 0 0; line-height: 1.5;">
+      <strong style="color: var(--grey-700);">Span vs cadence.</strong> First/middle entries show the <strong>span</strong> ("First 7 days", "Next 6 months") = how long the phase lasts. The last entry shows the <strong>cadence</strong> ("After that, billed every 2 months") = how often the card is charged going forward. Both derive from the same fields; only the grammar differs by position.
     </p>
   </div>
 </div>
