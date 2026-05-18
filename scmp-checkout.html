@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCMP Subscription Checkout — Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Roboto+Slab:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Core palette extracted from the Figma board */
+    --bg:#eef1f7;
+    --card:#ffffff;
+    --ink:#1a1a1a;
+    --ink-soft:#5b5f66;
+    --ink-mute:#8a8f98;
+    --line:#e3e6ec;
+    --line-soft:#eef0f4;
+    --navy:#1f3b73;
+    --navy-dark:#172d59;
+    --navy-press:#15264a;
+    --accent:#1a4f9c;       /* links / "See billing details" */
+    --green:#1a9d6e;        /* success check / account done */
+    --pill-a:#4f8bf5;       /* introductory price pill gradient */
+    --pill-b:#2f6ad6;
+    --disabled:#a3a6ad;
+    --disabled-ink:#ffffff;
+    --error:#d6322c;
+    --error-bg:#fdecec;
+    --banner-blue:#dde6fb;
+    --banner-blue-ink:#1f3b73;
+    --banner-amber:#fbeecb;
+    --banner-amber-ink:#7a5a14;
+    --banner-mint:#d2ebe1;
+    --banner-mint-ink:#1d6b50;
+    --logo-yellow:#f5c518;
+    --logo-navy:#0b1f3a;
+    --radius:12px;
+    --radius-sm:8px;
+    --shadow:0 1px 3px rgba(20,30,60,.06), 0 8px 24px rgba(20,30,60,.05);
+    --serif:'Roboto Slab', Georgia, 'Times New Roman', serif;
+    --sans:'Roboto', system-ui, -apple-system, sans-serif;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:var(--sans);
+    background:
+      radial-gradient(1200px 600px at 80% -10%, #e7ecf8 0%, transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    display:flex;
+    min-height:100vh;
+  }
+
+  /* ===== Layout shell ===== */
+  .shell{display:flex;width:100%;min-height:100vh}
+
+  /* Sidebar — flow navigator */
+  .nav{
+    width:268px;flex:none;
+    background:#fbfcfe;
+    border-right:1px solid var(--line);
+    padding:22px 16px 40px;
+    overflow-y:auto;height:100vh;position:sticky;top:0;
+  }
+  .nav h1{
+    font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--ink-mute);font-weight:700;margin:4px 6px 16px;
+  }
+  .nav-group{margin-bottom:18px}
+  .nav-group > .gh{
+    font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--accent);font-weight:700;margin:0 6px 6px;
+  }
+  .nav-item{
+    display:flex;align-items:center;gap:9px;
+    width:100%;text-align:left;border:0;background:transparent;
+    font-family:var(--sans);font-size:13.5px;color:var(--ink-soft);
+    padding:8px 10px;border-radius:8px;cursor:pointer;
+    transition:background .14s, color .14s;
+  }
+  .nav-item:hover{background:#eef2fb;color:var(--ink)}
+  .nav-item.active{background:var(--navy);color:#fff;font-weight:600}
+  .nav-item .dot{width:7px;height:7px;border-radius:50%;background:var(--line);flex:none}
+  .nav-item.active .dot{background:#fff}
+  .nav-foot{margin:22px 6px 0;font-size:11.5px;color:var(--ink-mute);line-height:1.6}
+
+  /* Stage */
+  .stage{
+    flex:1;display:flex;flex-direction:column;align-items:center;
+    padding:40px 24px 80px;overflow-y:auto;height:100vh;
+  }
+  .stage-top{
+    width:100%;max-width:760px;display:flex;align-items:center;
+    justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px;
+  }
+  .crumb{font-size:13px;color:var(--ink-mute)}
+  .crumb b{color:var(--ink-soft);font-weight:600}
+  .stage-actions{display:flex;gap:8px}
+  .ghost-btn{
+    border:1px solid var(--line);background:#fff;color:var(--ink-soft);
+    font-family:var(--sans);font-size:13px;font-weight:500;
+    padding:7px 14px;border-radius:8px;cursor:pointer;transition:.14s;
+  }
+  .ghost-btn:hover{border-color:var(--navy);color:var(--navy)}
+  .ghost-btn:disabled{opacity:.4;cursor:not-allowed}
+
+  /* ===== Phone frame ===== */
+  .device{
+    width:100%;max-width:430px;
+    background:var(--card);
+    border-radius:26px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    border:1px solid #e7eaf1;
+    animation:rise .4s cubic-bezier(.2,.7,.3,1);
+  }
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  .topbar{
+    background:#fff;border-bottom:1px solid var(--line-soft);
+    display:flex;align-items:center;justify-content:center;
+    padding:14px 0;gap:8px;
+  }
+  .logo{display:flex;align-items:center;gap:7px}
+  .logo .mark{display:flex}
+  .logo .mark i{display:block;width:11px;height:22px}
+  .logo .mark i.y{background:var(--logo-yellow)}
+  .logo .mark i.n{background:var(--logo-navy)}
+  .logo .word{
+    font-family:var(--serif);font-weight:700;font-size:15px;
+    color:var(--logo-navy);letter-spacing:-.01em;
+  }
+
+  .banner{
+    font-size:13px;text-align:center;padding:11px 16px;line-height:1.45;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .banner svg{flex:none}
+  .banner.blue{background:var(--banner-blue);color:var(--banner-blue-ink)}
+  .banner.amber{background:var(--banner-amber);color:var(--banner-amber-ink);font-size:12.5px}
+  .banner.mint{background:var(--banner-mint);color:var(--banner-mint-ink);font-size:12.5px}
+  .banner b{font-weight:700}
+
+  .scroll{padding:18px 16px 22px;background:var(--bg)}
+
+  /* Plan card */
+  .plan{
+    background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px 16px 0;margin-bottom:14px;
+  }
+  .plan-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .plan-title{font-size:16px;font-weight:700}
+  .plan-sub{font-size:13px;color:var(--ink-soft);margin-top:5px}
+  .pill{
+    display:inline-flex;align-items:center;gap:5px;flex:none;
+    background:linear-gradient(135deg,var(--pill-a),var(--pill-b));
+    color:#fff;font-size:11.5px;font-weight:700;
+    padding:5px 11px;border-radius:999px;
+    box-shadow:0 2px 6px rgba(47,106,214,.35);
+  }
+  .billing-toggle{
+    display:inline-flex;align-items:center;gap:6px;
+    color:var(--accent);font-size:13px;font-weight:500;
+    background:none;border:0;cursor:pointer;font-family:var(--sans);
+    margin:12px 0;padding:0;
+  }
+  .billing-toggle svg{transition:transform .2s}
+  .billing-toggle.open svg{transform:rotate(180deg)}
+  .billing-rows{display:none;padding:4px 0 10px;border-top:1px solid var(--line-soft);margin-top:6px}
+  .billing-rows.show{display:block}
+  .brow{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0}
+  .brow + .brow{border-top:1px solid var(--line-soft)}
+  .brow .lbl{display:flex;gap:8px;align-items:flex-start}
+  .brow .marker{width:9px;height:9px;border-radius:50%;border:2px solid var(--navy);margin-top:3px;flex:none}
+  .brow .marker.fill{background:var(--navy)}
+  .brow .marker.empty{border-color:var(--ink-mute);background:#fff}
+  .brow .t{font-size:13.5px;font-weight:500}
+  .brow .s{font-size:12px;color:var(--accent);margin-top:2px}
+  .brow .s.gray{color:var(--ink-mute)}
+  .brow .amt{font-size:13.5px;font-weight:700;text-align:right}
+  .brow .amt s{display:block;color:var(--ink-mute);font-weight:400;font-size:12px}
+  .due{
+    display:flex;justify-content:space-between;align-items:center;
+    border-top:1px solid var(--line);padding:14px 0;font-size:14px;
+  }
+  .due .l{font-weight:500}
+  .due .r{font-weight:700;font-size:15px}
+  .due .r s{color:var(--ink-mute);font-weight:400;font-size:13px;margin-right:6px}
+
+  /* Step card */
+  .step{
+    background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .step-row{
+    display:flex;align-items:center;gap:10px;padding:15px 16px;
+  }
+  .step-row + .step-body, .step-row + .step-row{border-top:1px solid var(--line-soft)}
+  .snum{
+    width:24px;height:24px;border-radius:50%;flex:none;
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:700;color:#fff;background:#000;
+  }
+  .snum.done{background:var(--green)}
+  .snum.idle{background:var(--ink-mute)}
+  .step-row .nm{font-weight:700;font-size:15px}
+  .step-row.collapsed .nm{color:var(--ink-soft);font-weight:600;font-size:14px}
+  .step-row .em{color:var(--ink-mute);font-size:13px;flex:1}
+  .step-row .change{
+    color:var(--accent);font-size:13px;font-weight:500;
+    text-decoration:underline;background:none;border:0;cursor:pointer;font-family:var(--sans);
+  }
+  .step-body{padding:18px 18px 22px}
+
+  .center{text-align:center}
+  .h-form{font-size:19px;font-weight:700;margin-bottom:4px}
+  .h-form.serif{font-family:var(--serif);font-weight:600;font-size:22px}
+  .sub-form{font-size:13.5px;color:var(--ink-soft);margin-bottom:18px}
+
+  /* Social buttons */
+  .social{
+    display:flex;align-items:center;justify-content:center;gap:10px;position:relative;
+    width:100%;border:1px solid var(--line);background:#fff;border-radius:10px;
+    padding:13px;font-size:14px;font-weight:500;color:var(--ink);
+    cursor:pointer;font-family:var(--sans);margin-bottom:10px;transition:.14s;
+  }
+  .social:hover{border-color:#c7ccd6;background:#fcfcfd}
+  .social .ic{width:20px;height:20px;display:flex;align-items:center;justify-content:center}
+  .social .last{
+    position:absolute;right:12px;background:var(--line-soft);
+    font-size:11px;font-weight:600;color:var(--ink-soft);
+    padding:3px 8px;border-radius:6px;
+  }
+  .social.dark{background:#111;color:#fff;border-color:#111;font-weight:600;letter-spacing:.02em}
+  .social.dark:hover{background:#000}
+
+  .or{
+    display:flex;align-items:center;gap:14px;
+    color:var(--ink-soft);font-size:13px;margin:16px 2px;
+  }
+  .or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+
+  /* Inputs */
+  .field{margin-bottom:14px}
+  .lab{display:block;font-size:13px;font-weight:500;color:var(--ink-soft);margin-bottom:7px}
+  .inp{
+    width:100%;border:1px solid var(--line);border-radius:10px;
+    padding:14px 14px;font-size:14px;font-family:var(--sans);color:var(--ink);
+    background:#fff;outline:none;transition:border-color .14s, box-shadow .14s;
+  }
+  .inp::placeholder{color:var(--ink-mute)}
+  .inp:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(31,59,115,.1)}
+  .inp.ok{border-color:var(--green)}
+  .inp.err{border-color:var(--error)}
+  .inp-wrap{position:relative;display:flex;align-items:center}
+  .inp-wrap .tail{position:absolute;right:14px;display:flex;align-items:center;color:var(--ink-mute);cursor:pointer}
+  .inp-wrap .tail.green{color:var(--green)}
+  .help-err{color:var(--error);font-size:12.5px;margin-top:7px}
+  .row2{display:flex;gap:10px}
+  .row2 > *{flex:1}
+
+  .email-locked{
+    display:flex;justify-content:space-between;align-items:center;
+    border:1px solid var(--line);border-radius:10px;padding:14px;
+    font-size:14px;margin-bottom:14px;
+  }
+  .email-locked .ch{
+    color:var(--ink);text-decoration:underline;font-size:13px;
+    background:none;border:0;cursor:pointer;font-family:var(--sans);font-weight:500;
+  }
+
+  .link{color:var(--accent);font-size:13px;font-weight:500;text-decoration:underline;background:none;border:0;cursor:pointer;font-family:var(--sans)}
+  .terms{font-size:12px;color:var(--ink-soft);text-align:center;margin-top:14px;line-height:1.6}
+  .terms a{color:var(--ink-soft)}
+
+  /* Primary button */
+  .btn{
+    width:100%;border:0;border-radius:10px;padding:15px;
+    font-family:var(--sans);font-size:14px;font-weight:700;letter-spacing:.04em;
+    text-transform:uppercase;color:#fff;background:var(--navy);
+    cursor:pointer;transition:background .14s, transform .08s;
+  }
+  .btn:hover{background:var(--navy-dark)}
+  .btn:active{transform:translateY(1px);background:var(--navy-press)}
+  .btn.disabled,.btn:disabled{background:var(--disabled);cursor:not-allowed}
+  .btn.disabled:hover,.btn:disabled:hover{background:var(--disabled)}
+  .btn.dark{background:#111;text-transform:none;letter-spacing:.01em;font-size:15px}
+  .btn.dark:hover{background:#000}
+  .btn.outline{background:#fff;color:var(--navy);border:1.5px solid var(--navy)}
+  .btn.outline:hover{background:#f4f7fd}
+  .btn + .btn{margin-top:10px}
+
+  .secure{
+    display:flex;align-items:center;justify-content:center;gap:7px;
+    color:var(--ink-mute);font-size:12.5px;margin-top:14px;
+  }
+
+  /* Payment method rows */
+  .pm-list{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:14px 0 18px}
+  .pm{
+    display:flex;align-items:center;gap:12px;padding:16px 14px;
+    background:#fff;cursor:pointer;border:0;width:100%;font-family:var(--sans);
+    transition:background .12s;
+  }
+  .pm + .pm{border-top:1px solid var(--line-soft)}
+  .pm:hover{background:#f8fafd}
+  .pm .pm-main{flex:1;display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600}
+  .pm .chev{color:var(--ink-mute)}
+  .brands{display:flex;gap:6px;align-items:center}
+  .brand{
+    height:22px;border:1px solid var(--line);border-radius:4px;
+    display:flex;align-items:center;justify-content:center;padding:0 6px;
+    font-size:10px;font-weight:800;background:#fff;letter-spacing:-.02em;
+  }
+  .brand.visa{color:#1a1f71}
+  .brand.mc{color:#eb001b}
+  .brand.amex{color:#fff;background:#2671b9;border-color:#2671b9}
+  .brand.up{color:#e21836;font-size:8px}
+  .alipay{font-weight:800;font-size:16px;color:#1677ff}
+  .alipay sup{font-size:10px;color:#00a0e9;font-weight:700;margin-left:2px}
+
+  .ask{font-size:14px;color:var(--ink-soft);text-align:center;margin-bottom:6px}
+
+  /* Saved card radios */
+  .card-opt{
+    display:flex;align-items:center;gap:12px;padding:15px 2px;cursor:pointer;
+  }
+  .card-opt + .card-opt{border-top:1px solid var(--line-soft)}
+  .radio{
+    width:20px;height:20px;border-radius:50%;border:2px solid var(--line);
+    flex:none;display:flex;align-items:center;justify-content:center;transition:.14s;
+  }
+  .card-opt.sel .radio{border-color:var(--navy)}
+  .card-opt.sel .radio::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--navy)}
+  .card-opt .cv{flex:1;display:flex;align-items:center;gap:10px;font-weight:600;font-size:14px}
+  .card-opt .last4{color:var(--ink-soft);font-size:14px;font-weight:600}
+  .card-opt.add .cv{color:var(--ink-mute);font-weight:500}
+  .sec-lab{font-size:13px;font-weight:500;color:var(--ink-soft);margin:6px 0 2px}
+
+  /* Checkbox */
+  .check{display:flex;align-items:flex-start;gap:9px;font-size:12.5px;color:var(--ink-soft);cursor:pointer;margin:14px 0 6px;line-height:1.5}
+  .box{
+    width:18px;height:18px;border:1.5px solid var(--ink-mute);border-radius:4px;flex:none;
+    display:flex;align-items:center;justify-content:center;margin-top:1px;transition:.12s;
+  }
+  .check.on .box{background:var(--navy);border-color:var(--navy)}
+  .check a{color:var(--ink-soft);text-decoration:underline}
+  .renew-note{font-size:12px;color:var(--ink-soft);text-align:center;margin:6px 0 16px;line-height:1.5}
+
+  .promo{display:flex;gap:10px;align-items:center;margin:6px 0 16px}
+  .promo .inp{flex:1;margin:0}
+  .promo .apply{
+    background:var(--disabled);color:#fff;border:0;border-radius:8px;
+    padding:0 18px;height:48px;font-family:var(--sans);font-weight:700;
+    font-size:13px;letter-spacing:.04em;cursor:pointer;
+  }
+  .promo .apply.live{background:var(--navy);cursor:pointer}
+  .promo-link{color:var(--ink-mute);font-size:13px;padding:14px 0;border-bottom:1px solid var(--line-soft);margin-bottom:16px;cursor:pointer}
+
+  .sel-wrap{position:relative;margin-bottom:8px}
+  .sel{
+    width:100%;border:1px solid var(--line);border-radius:10px;
+    padding:14px 40px 14px 42px;font-size:14px;font-family:var(--sans);
+    appearance:none;background:#fff;color:var(--ink);cursor:pointer;
+  }
+  .sel-wrap .globe{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--ink-soft)}
+  .sel-wrap .down{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--ink-soft);pointer-events:none}
+
+  /* QR */
+  .qr-box{
+    background:#fff;border:1px solid var(--line);border-radius:10px;
+    display:flex;align-items:center;gap:16px;padding:20px 18px;margin:14px 0;
+  }
+  .qr-box .txt{font-size:14px;color:var(--ink);line-height:1.5}
+  .qr-box .txt b{font-weight:700}
+  .qr-img{
+    width:104px;height:104px;flex:none;border-radius:6px;background:#fff;
+    padding:6px;border:1px solid var(--line-soft);
+  }
+
+  /* Success summary */
+  .succ-check{
+    width:58px;height:58px;border-radius:50%;border:2px solid var(--navy);
+    display:flex;align-items:center;justify-content:center;margin:6px auto 16px;color:var(--navy);
+  }
+  .succ-check.green{border-color:var(--green);color:var(--green)}
+  .summary{
+    background:var(--bg);border-radius:10px;overflow:hidden;margin:18px 0 14px;
+  }
+  .srow{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;font-size:13.5px}
+  .srow + .srow{border-top:1px solid #e1e5ee}
+  .srow .k{color:var(--ink-soft)}
+  .srow .v{font-weight:700}
+  .summary.box{padding:16px;border-radius:10px}
+  .summary.box .ttl{font-weight:700;font-size:14px;padding-bottom:12px;border-bottom:1px solid #dde2ec;margin-bottom:4px}
+  .receipt-note{font-size:12.5px;color:var(--ink-soft);text-align:center;margin:6px 0 18px}
+  .access-box{
+    background:var(--bg);border-radius:10px;padding:18px 16px;text-align:center;
+    font-size:13.5px;color:var(--ink-soft);margin:16px 0 18px;line-height:1.6;
+  }
+  .access-box b{color:var(--ink);font-weight:700}
+  .not-you{font-size:13px;color:var(--ink-soft);text-align:center;margin-top:14px}
+
+  /* Article preview */
+  .art-wrap{margin:14px 0 2px}
+  .art-tag{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute);font-weight:700;margin-bottom:10px}
+  .art{display:flex;gap:12px;padding:12px 0;border-top:1px solid var(--line-soft)}
+  .art .meta{flex:1}
+  .art .ttl{font-family:var(--serif);font-weight:600;font-size:15px;line-height:1.35;color:var(--ink)}
+  .art .sub{font-size:12px;color:var(--ink-mute);margin-top:6px}
+  .art .thumb{width:74px;height:60px;border-radius:6px;flex:none;background:linear-gradient(135deg,#cdd6e8,#aebdd8)}
+
+  .reset-bar{margin-top:16px;font-size:12px;color:var(--ink-mute);text-align:center}
+  .reset-bar button{background:none;border:0;color:var(--accent);text-decoration:underline;cursor:pointer;font-family:var(--sans);font-size:12px}
+
+  @media (max-width:880px){
+    .shell{flex-direction:column}
+    .nav{width:100%;height:auto;position:static;border-right:0;border-bottom:1px solid var(--line);
+      display:flex;flex-wrap:wrap;gap:6px;padding:14px}
+    .nav h1,.nav-foot{display:none}
+    .nav-group{margin:0}
+    .nav-group > .gh{display:none}
+    .nav-item{width:auto;font-size:12px;padding:7px 11px;border:1px solid var(--line);border-radius:999px}
+    .nav-item .dot{display:none}
+    .stage{height:auto;padding:24px 14px 60px}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ============ FLOW NAVIGATOR ============ -->
+  <aside class="nav" id="nav">
+    <h1>SCMP Checkout</h1>
+    <div class="nav-group">
+      <div class="gh">Step 1 · Account</div>
+      <button class="nav-item" data-screen="signin">Sign in / Register</button>
+      <button class="nav-item" data-screen="email-ok">Email entered (valid)</button>
+      <button class="nav-item" data-screen="email-bad">Email invalid</button>
+      <button class="nav-item" data-screen="welcome-pw">Welcome back · password</button>
+      <button class="nav-item" data-screen="welcome-social">Welcome back · social</button>
+      <button class="nav-item" data-screen="reset-sent">Reset email sent</button>
+      <button class="nav-item" data-screen="subscribed">Already subscribed</button>
+      <button class="nav-item" data-screen="has-access">Already have access</button>
+    </div>
+    <div class="nav-group">
+      <div class="gh">Step 2a · Method</div>
+      <button class="nav-item" data-screen="pay-choose">Choose payment method</button>
+      <button class="nav-item" data-screen="pay-noalipay">No Alipay (card+Apple)</button>
+      <button class="nav-item" data-screen="pay-cardform">New card form</button>
+      <button class="nav-item" data-screen="price-up">Price increased</button>
+      <button class="nav-item" data-screen="price-down">Price decreased</button>
+    </div>
+    <div class="nav-group">
+      <div class="gh">Step 2b · Payment</div>
+      <button class="nav-item" data-screen="pay-saved">Saved card selected</button>
+      <button class="nav-item" data-screen="pay-billing">Billing details · Apple Pay</button>
+      <button class="nav-item" data-screen="pay-alipay">Alipay QR</button>
+    </div>
+    <div class="nav-group">
+      <div class="gh">Thank you</div>
+      <button class="nav-item" data-screen="ty-allset">You're all set</button>
+      <button class="nav-item" data-screen="ty-confirmed">Payment confirmed</button>
+      <button class="nav-item" data-screen="ty-youre-in">You're in</button>
+    </div>
+    <div class="nav-foot">
+      Rebuilt from <i>Scope 1 Updates</i>. Roboto UI · Roboto&nbsp;Slab for marketing headings · SCMP navy palette.
+    </div>
+  </aside>
+
+  <!-- ============ STAGE ============ -->
+  <main class="stage">
+    <div class="stage-top">
+      <div class="crumb" id="crumb"><b>Step 1</b> · Sign in / Register</div>
+      <div class="stage-actions">
+        <button class="ghost-btn" id="prevBtn">← Prev</button>
+        <button class="ghost-btn" id="nextBtn">Next →</button>
+      </div>
+    </div>
+    <div class="device" id="device"></div>
+    <div class="reset-bar">Prototype — interactions are simulated. <button id="restart">Restart flow</button></div>
+  </main>
+</div>
+
+<script>
+/* ---------- shared building blocks ---------- */
+const logo = `<div class="topbar"><div class="logo">
+  <span class="mark"><i class="y"></i><i class="n"></i></span>
+  <span class="word">South China Morning Post</span></div></div>`;
+
+const chevDown = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>`;
+const chevRight = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
+const checkSm = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+const checkBig = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+const eye = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const greenTick = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+const lock = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>`;
+const globe = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18z"/></svg>`;
+const infoIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>`;
+const tagIcon = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.5" fill="currentColor"/></svg>`;
+const gIcon = `<svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.5 12.2c0-.8-.07-1.5-.2-2.2H12v4.2h5.9c-.25 1.4-1 2.5-2.15 3.3v2.7h3.5c2-1.9 3.25-4.7 3.25-8z"/><path fill="#34A853" d="M12 23c2.9 0 5.35-1 7.13-2.6l-3.5-2.7c-1 .65-2.25 1-3.63 1-2.8 0-5.15-1.9-6-4.4H2.4v2.8C4.15 20.4 7.8 23 12 23z"/><path fill="#FBBC05" d="M6 14.3c-.2-.65-.35-1.35-.35-2.05S5.8 10.85 6 10.2V7.4H2.4C1.75 8.8 1.4 10.35 1.4 12s.35 3.2 1 4.6L6 14.3z"/><path fill="#EA4335" d="M12 5.6c1.6 0 3 .55 4.1 1.6l3.05-3.05C17.3 2.4 14.9 1.4 12 1.4 7.8 1.4 4.15 4 2.4 7.4L6 10.2c.85-2.5 3.2-4.6 6-4.6z"/></svg>`;
+const aIcon = `<svg width="16" height="18" viewBox="0 0 24 28" fill="#111"><path d="M17 14.5c0-2.6 2-3.9 2.1-4-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.15-2.9.9-3.65.9-.75 0-1.9-.85-3.15-.85-1.6.05-3.1 1-3.9 2.4-1.7 2.95-.45 7.3 1.2 9.7.8 1.15 1.75 2.45 3 2.4 1.2-.05 1.65-.8 3.1-.8s1.85.8 3.1.75c1.3-.05 2.1-1.2 2.9-2.35.9-1.35 1.3-2.65 1.3-2.7-.05-.05-2.5-.95-2.5-3.8zM14.7 6.6c.65-.8 1.1-1.9 1-3-1 .05-2.15.65-2.85 1.45-.6.7-1.15 1.85-1 2.9 1.1.1 2.2-.55 2.85-1.35z"/></svg>`;
+const fIcon = `<svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#1877F2"/><path fill="#fff" d="M15.5 12.5h-2.3V20h-3v-7.5H8.5V10h1.7V8.4c0-2 .9-3.4 3.4-3.4h2v2.6h-1.3c-.95 0-1.1.45-1.1 1.15V10h2.4l-.1 2.5z"/></svg>`;
+const appleWhite = `<svg width="15" height="17" viewBox="0 0 24 28" fill="#fff"><path d="M17 14.5c0-2.6 2-3.9 2.1-4-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.15-2.9.9-3.65.9-.75 0-1.9-.85-3.15-.85-1.6.05-3.1 1-3.9 2.4-1.7 2.95-.45 7.3 1.2 9.7.8 1.15 1.75 2.45 3 2.4 1.2-.05 1.65-.8 3.1-.8s1.85.8 3.1.75c1.3-.05 2.1-1.2 2.9-2.35.9-1.35 1.3-2.65 1.3-2.7-.05-.05-2.5-.95-2.5-3.8zM14.7 6.6c.65-.8 1.1-1.9 1-3-1 .05-2.15.65-2.85 1.45-.6.7-1.15 1.85-1 2.9 1.1.1 2.2-.55 2.85-1.35z"/></svg>`;
+
+function planCard(opts={}){
+  const o = Object.assign({
+    title:'Standard: Annual',
+    sub:'HKD780 for a year. Renews at HKD960/year.',
+    pill:'Introductory price',
+    oldP:'HKD960.00', newP:'HKD780.00',
+    showToggle:true, expanded:false, noPrice:false,
+    cur:'HKD', y1:'780', std:'960', off:'19% off'
+  }, opts);
+  const pill = o.pill ? `<span class="pill">${tagIcon}${o.pill}</span>` : '';
+  const rows = o.showToggle ? `
+    <button class="billing-toggle ${o.expanded?'open':''}" onclick="toggleBilling(this)">
+      <span>${o.expanded?'Hide':'See'} billing details</span>${chevDown}</button>
+    <div class="billing-rows ${o.expanded?'show':''}">
+      <div class="brow">
+        <div class="lbl"><span class="marker fill"></span>
+          <div><div class="t">Today · year 1</div><div class="s">Introductory rate · ${o.off}</div></div></div>
+        <div class="amt">${o.cur}${o.y1}<s>${o.cur}${o.std}</s></div>
+      </div>
+      <div class="brow">
+        <div class="lbl"><span class="marker empty"></span>
+          <div><div class="t">Year 2 onward</div><div class="s gray">Standard rate · renews yearly</div></div></div>
+        <div class="amt">${o.cur}${o.std}/yr</div>
+      </div>
+    </div>` : '';
+  const due = o.noPrice
+    ? `<div class="due"><span class="l">Due today</span><span class="r">${o.newP}</span></div>`
+    : `<div class="due"><span class="l">Due today</span><span class="r"><s>${o.oldP}</s>${o.newP}</span></div>`;
+  return `<div class="plan">
+    <div class="plan-head"><div>
+      <div class="plan-title">${o.title}</div>
+      <div class="plan-sub">${o.sub}</div></div>${pill}</div>
+    ${rows}${due}</div>`;
+}
+
+function accountRow(email='abc@abc.com'){
+  return `<div class="step-row collapsed">
+    <span class="snum done">${checkSm}</span>
+    <span class="nm">Account</span><span class="em">${email}</span>
+    <button class="change" onclick="go('signin')">Change</button></div>`;
+}
+
+/* ---------- screens ---------- */
+const screens = {
+
+  signin: { crumb:'<b>Step 1</b> · Sign in / Register', body:()=>`
+    ${logo}<div class="scroll">
+      ${planCard()}
+      <div class="step">
+        <div class="step-row"><span class="snum">1</span><span class="nm">Account</span></div>
+        <div class="step-body">
+          <div class="center"><div class="h-form">Sign in / Register</div>
+            <div class="sub-form">Get started by logging in or creating your account</div></div>
+          <button class="social" onclick="go('welcome-pw')">${gIcon}<span>Continue with Google</span><span class="last">Last used</span></button>
+          <button class="social" onclick="go('welcome-social')">${aIcon}<span>Continue with Apple</span></button>
+          <button class="social" onclick="go('subscribed')">${fIcon}<span>Continue with Facebook</span></button>
+          <div class="or">or</div>
+          <div class="field"><input class="inp" id="emailIn" placeholder="Enter your email" oninput="emailType(this)"></div>
+          <button class="btn disabled" id="emailBtn" disabled>Continue with email</button>
+          <div class="terms">By continuing, you agree to our <a href="#">Terms of Service</a> and our <a href="#">Privacy Policy</a></div>
+        </div>
+        <div class="step-row"><span class="snum idle">2</span><span class="nm" style="color:var(--ink-mute);font-weight:600">Payment</span></div>
+      </div>
+    </div>`},
+
+  'email-ok': { crumb:'<b>Step 1</b> · Email entered (valid)', body:()=>`
+    ${logo}<div class="scroll">
+      ${planCard()}
+      <div class="step">
+        <div class="step-row"><span class="snum">1</span><span class="nm">Account</span></div>
+        <div class="step-body">
+          <div class="center"><div class="h-form">Sign in / Register</div>
+            <div class="sub-form">Get started by logging in or creating your account</div></div>
+          <button class="social" onclick="go('welcome-pw')">${gIcon}<span>Continue with Google</span><span class="last">Last used</span></button>
+          <button class="social" onclick="go('welcome-social')">${aIcon}<span>Continue with Apple</span></button>
+          <button class="social" onclick="go('subscribed')">${fIcon}<span>Continue with Facebook</span></button>
+          <div class="or">or</div>
+          <div class="field"><div class="inp-wrap">
+            <input class="inp ok" value="abc@abc.com" readonly>
+            <span class="tail green">${greenTick}</span></div></div>
+          <button class="btn" onclick="go('welcome-pw')">Continue with email</button>
+          <div class="terms">By continuing, you agree to our <a href="#">Terms of Service</a> and our <a href="#">Privacy Policy</a></div>
+        </div>
+        <div class="step-row"><span class="snum idle">2</span><span class="nm" style="color:var(--ink-mute);font-weight:600">Payment</span></div>
+      </div>
+    </div>`},
+
+  'email-bad': { crumb:'<b>Step 1</b> · Email invalid', body:()=>`
+    ${logo}<div class="scroll">
+      ${planCard()}
+      <div class="step">
+        <div class="step-row"><span class="snum">1</span><span class="nm">Account</span></div>
+        <div class="step-body">
+          <div class="center"><div class="h-form">Sign in / Register</div>
+            <div class="sub-form">Get started by logging in or creating your account</div></div>
+          <button class="social" onclick="go('welcome-pw')">${gIcon}<span>Continue with Google</span><span class="last">Last used</span></button>
+          <button class="social" onclick="go('welcome-social')">${aIcon}<span>Continue with Apple</span></button>
+          <button class="social" onclick="go('subscribed')">${fIcon}<span>Continue with Facebook</span></button>
+          <div class="or">or</div>
+          <div class="field">
+            <input class="inp err" value="abcabc.com" oninput="emailType(this,true)">
+            <div class="help-err">Please enter a valid email address</div></div>
+          <button class="btn disabled" disabled>Continue with email</button>
+          <div class="terms">By continuing, you agree to our <a href="#">Terms of Service</a> and our <a href="#">Privacy Policy</a></div>
+        </div>
+        <div class="step-row"><span class="snum idle">2</span><span class="nm" style="color:var(--ink-mute);font-weight:600">Payment</span></div>
+      </div>
+    </div>`},
+
+  'welcome-pw': { crumb:'<b>Step 1</b> · Welcome back · password', body:()=>`
+    ${logo}<div class="scroll">
+      ${planCard()}
+      <div class="step">
+        <div class="step-row"><span class="snum">1</span><span class="nm">Account</span></div>
+        <div class="step-body">
+          <div class="center"><div class="h-form">Welcome back</div>
+            <div class="sub-form">Enter your password to log in.</div></div>
+          <div class="email-locked"><span>abc@abc.com</span>
+            <button class="ch" onclick="go('signin')">Change</button></div>
+          <div class="field"><div class="inp-wrap">
+            <input class="inp" id="pw" type="password" placeholder="Password" oninput="pwType(this)">
+            <span class="tail" onclick="togglePw()">${eye}</span></div></div>
+          <div style="margin:-4px 0 18px"><button class="link" onclick="go('reset-sent')">Forgot your password?</button></div>
+          <button class="btn disabled" id="loginBtn" disabled>Log in</button>
+        </div>
+        <div class="step-row"><span class="snum idle">2</span><span class="nm" style="color:var(--ink-mute);font-weight:600">Payment</span></div>
+      </div>
+    </div>`},
+
+  'welcome-social': { crumb:'<b>Step 1</b> · Welcome back · social', body:()=>`
+    ${logo}<div class="scroll">
+      ${planCard()}
+      <div class="step">
+        <div class="step-row"><span class="snum">1</span><span class="nm">Account</span></div>
+        <div class="step-body">
+          <div class="center"><div class="h-form">Welcome back</div>
+            <div class="sub-form">This email previously logged in using Google</div></div>
+          <div class="email-locked"><span>abc@abc.com</span>
+            <button class="ch" onclick="go('signin')">Change</button></div>
+          <button class="social dark" onclick="go('pay-choose')">${gIcon}<span>Continue with Google</span></button>
+        </div>
+        <div class="step-row"><span class="snum idle">2</span><span class="nm" style="color:var(--ink-mute);font-weight:600">Payment</span></div>
+      </div>
+    </div>`},
+
+  'reset-sent': { crumb:'<b>Step 1</b> · Reset email sent', body:()=>`
+    ${logo}<div class="scroll">
+      ${planCard()}
+      <div class="step">
+        <div class="step-row"><span class="snum">1</span><span class="nm">Account</span></div>
+        <div class="step-body center">
+          <div class="succ-check" style="border-color:var(--ink-soft);color:var(--ink-soft);width:50px;height:50px">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg></div>
+          <div class="h-form">Check your email to reset your password</div>
+          <div class="sub-form" style="margin:8px 0 16px">We sent an email to <b style="color:var(--ink)">abc@abc.com</b>. Please check and follow the instruction to reset your password.</div>
+          <div style="font-size:13px;color:var(--ink-soft);margin-bottom:18px">Not receiving the email? <button class="link" style="font-weight:700">Send again</button></div>
+          <button class="btn" onclick="go('welcome-pw')">Go back</button>
+        </div>
+        <div class="step-row"><span class="snum idle">2</span><span class="nm" style="color:var(--ink-mute);font-weight:600">Payment</span></div>
+      </div>
+    </div>`},
+
+  subscribed: { crumb:'<b>Step 1</b> · Already subscribed', body:()=>`
+    ${logo}<div class="scroll">
+      <div class="step"><div class="step-body center">
+        <div class="succ-check green">${checkBig}</div>
+        <div class="h-form serif">You're already subscribed</div>
+        <div class="sub-form" style="margin-top:6px">Here's a summary of your subscription</div>
+        <div class="summary box" style="text-align:left">
+          <div class="ttl">Standard: Annual</div>
+          <div class="srow" style="padding:11px 0"><span class="k">Email</span><span class="v">abc@abc.com</span></div>
+          <div class="srow" style="padding:11px 0;border-top:1px solid #dde2ec"><span class="k">Started</span><span class="v">12 May 2024</span></div>
+        </div>
+        <button class="btn outline" onclick="go('has-access')">My account</button>
+        <button class="btn" onclick="go('ty-allset')">Go to SCMP.com</button>
+        <div class="not-you">Not you? <button class="link">Sign in with another account</button></div>
+      </div></div>
+    </div>`},
+
+  'has-access': { crumb:'<b>Step 1</b> · Already have access', body:()=>`
+    ${logo}<div class="scroll">
+      <div class="step"><div class="step-body center">
+        <div class="succ-check green">${checkBig}</div>
+        <div class="h-form serif">Looks like you already have access!</div>
+        <div class="sub-form" style="margin-top:8px">You can <button class="link">manage your subscription here</button> to ensure your payment method and subscription period are up-to-date</div>
+        <div class="access-box">You currently have access to:<br><b>Standard: annual</b><br>started on 06 May 2024</div>
+        <button class="btn" onclick="go('ty-allset')">Go to SCMP.com</button>
+      </div></div>
+    </div>`},
+
+  'pay-choose': { crumb:'<b>Step 2a</b> · Choose payment method', body:()=>`
+    ${logo}
+    <div class="banner blue">${infoIcon}<span><b>Great choice!</b> You're securing <b>an excellent deal!</b></span></div>
+    <div class="scroll">
+      ${planCard()}
+      <div class="step">
+        ${accountRow()}
+        <div class="step-row"><span class="snum">2</span><span class="nm">Payment</span></div>
+        <div class="step-body" style="padding-top:6px">
+          <div class="ask">Please choose a payment method to continue:</div>
+          <div class="pm-list">
+            <button class="pm" onclick="go('pay-cardform')">
+              <span class="pm-main"><span class="brands">
+                <span class="brand visa">VISA</span><span class="brand mc">●●</span>
+                <span class="brand amex">AMEX</span><span class="brand up">UnionPay</span></span></span>
+              <span class="chev">${chevRight}</span></button>
+            <button class="pm" onclick="go('pay-billing')">
+              <span class="pm-main">${aIcon}<span>Pay</span></span><span class="chev">${chevRight}</span></button>
+            <button class="pm" onclick="go('pay-alipay')">
+              <span class="pm-main"><span class="alipay">Alipay<sup>HK</sup></span></span><span class="chev">${chevRight}</span></button>
+          </div>
+          <button class="btn disabled" disabled>Pay &amp; subscribe</button>
+          <div class="secure">${lock} Secure transaction</div>
+        </div>
+      </div>
+    </div>`},
+
+  'pay-noalipay': { crumb:'<b>Step 2a</b> · No Alipay available', body:()=>`
+    ${logo}
+    <div class="banner blue">${infoIcon}<span><b>Great choice!</b> You're securing <b>an excellent deal!</b></span></div>
+    <div class="scroll">
+      ${planCard()}
+      <div class="step">
+        ${accountRow()}
+        <div class="step-row"><span class="snum">2</span><span class="nm">Payment</span></div>
+        <div class="step-body" style="padding-top:6px">
+          <div class="ask">Please choose a payment method to continue:</div>
+          <div class="pm-list">
+            <button class="pm" onclick="go('pay-cardform')">
+              <span class="pm-main"><span class="brands">
+                <span class="brand visa">VISA</span><span class="brand mc">●●</span>
+                <span class="brand amex">AMEX</span><span class="brand up">UnionPay</span></span></span>
+              <span class="chev">${chevRight}</span></button>
+            <button class="pm" onclick="go('pay-billing')">
+              <span class="pm-main">${aIcon}<span>Pay</span></span><span class="chev">${chevRight}</span></button>
+          </div>
+          <button class="btn disabled" disabled>Pay &amp; subscribe</button>
+          <div class="secure">${lock} Secure transaction</div>
+        </div>
+      </div>
+    </div>`},
+
+  'pay-cardform': { crumb:'<b>Step 2a</b> · New card form', body:()=>`
+    ${logo}
+    <div class="banner blue">${infoIcon}<span><b>Great choice!</b> You're securing <b>an excellent deal!</b></span></div>
+    <div class="scroll">
+      ${planCard()}
+      <div class="step">
+        ${accountRow()}
+        <div class="step-row"><span class="snum">2</span><span class="nm">Payment</span>
+          <button class="change" onclick="go('pay-choose')">Change</button></div>
+        <div class="step-body" style="padding-top:8px">
+          <div class="promo-link">Got a promo code?</div>
+          <label class="lab">Country of residence</label>
+          <div class="sel-wrap"><span class="globe">${globe}</span>
+            <select class="sel"><option>Hong Kong SAR</option><option>Singapore</option><option>United Kingdom</option></select>
+            <span class="down">${chevDown}</span></div>
+          <label class="check" onclick="this.classList.toggle('on')"><span class="box">${checkSm}</span><span>I reside in the same country as my billing address</span></label>
+          <label class="lab" style="margin-top:14px">Select your billing country</label>
+          <div class="sel-wrap"><span class="globe">${globe}</span>
+            <select class="sel"><option>Select a country or region</option><option>Hong Kong SAR</option></select>
+            <span class="down">${chevDown}</span></div>
+          <label class="sec-lab" style="margin-top:16px">Add a new credit or debit card</label>
+          <div class="field" style="margin-bottom:10px"><div class="inp-wrap">
+            <input class="inp" placeholder="Credit or Debit Card number" style="padding-left:42px">
+            <span class="tail" style="left:14px;right:auto;color:var(--ink-mute)">
+              <svg width="18" height="14" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="1" width="22" height="16" rx="2"/><path d="M1 6h22"/></svg></span></div></div>
+          <div class="row2"><input class="inp" placeholder="MM/YY"><input class="inp" placeholder="CVC"></div>
+          <label class="check" onclick="this.classList.toggle('on')"><span class="box">${checkSm}</span><span>By subscribing, you agree to our <a href="#">terms and conditions</a></span></label>
+          <div class="renew-note">Your subscription will renew automatically unless you cancel prior to renewal</div>
+          <button class="btn disabled" disabled>Pay &amp; subscribe</button>
+          <div class="secure">${lock} Secure transaction</div>
+        </div>
+      </div>
+    </div>`},
+
+  'price-up': { crumb:'<b>Step 2a</b> · Price increased after login', body:()=>`
+    ${logo}
+    <div class="banner amber">${infoIcon}<span><b>Your price has been updated.</b> The introductory rate is for first-time subscribers. Here's our standard pricing for returning members.</span></div>
+    <div class="scroll">
+      ${planCard({sub:'HKD960/year', pill:'', showToggle:false, noPrice:true, newP:'HKD960.00'})}
+      <div class="step">
+        ${accountRow()}
+        <div class="step-row"><span class="snum">2</span><span class="nm">Payment</span>
+          <button class="change" onclick="go('pay-choose')">Change</button></div>
+        <div class="step-body" style="padding-top:6px">
+          <div class="ask">Please choose a payment method to continue:</div>
+          <div class="pm-list">
+            <button class="pm" onclick="go('pay-cardform')">
+              <span class="pm-main"><span class="brands">
+                <span class="brand visa">VISA</span><span class="brand mc">●●</span>
+                <span class="brand amex">AMEX</span><span class="brand up">UnionPay</span></span></span>
+              <span class="chev">${chevRight}</span></button>
+            <button class="pm" onclick="go('pay-billing')">
+              <span class="pm-main">${aIcon}<span>Pay</span></span><span class="chev">${chevRight}</span></button>
+            <button class="pm" onclick="go('pay-alipay')">
+              <span class="pm-main"><span class="alipay">Alipay<sup>HK</sup></span></span><span class="chev">${chevRight}</span></button>
+          </div>
+          <button class="btn disabled" disabled>Pay &amp; subscribe</button>
+          <div class="secure">${lock} Secure transaction</div>
+        </div>
+      </div>
+    </div>`},
+
+  'price-down': { crumb:'<b>Step 2a</b> · Price decreased after login', body:()=>`
+    ${logo}
+    <div class="banner mint">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
+      <span><b>A loyalty discount has been applied.</b> Welcome back — you've unlocked our returning-member rate.</span></div>
+    <div class="scroll">
+      ${planCard({title:'Standard: Annual', sub:'USD60 for year 1, then USD120/year', pill:'Welcome back offer', oldP:'USD120.00', newP:'USD60.00', showToggle:true, cur:'USD', y1:'60', std:'120', off:'50% off'})}
+      <div class="step">
+        ${accountRow()}
+        <div class="step-row"><span class="snum">2</span><span class="nm">Payment</span>
+          <button class="change" onclick="go('pay-choose')">Change</button></div>
+        <div class="step-body" style="padding-top:6px">
+          <div class="ask">Please choose a payment method to continue:</div>
+          <div class="pm-list">
+            <button class="pm" onclick="go('pay-cardform')">
+              <span class="pm-main"><span class="brands">
+                <span class="brand visa">VISA</span><span class="brand mc">●●</span>
+                <span class="brand amex">AMEX</span><span class="brand up">UnionPay</span></span></span>
+              <span class="chev">${chevRight}</span></button>
+            <button class="pm" onclick="go('pay-billing')">
+              <span class="pm-main">${aIcon}<span>Pay</span></span><span class="chev">${chevRight}</span></button>
+            <button class="pm" onclick="go('pay-alipay')">
+              <span class="pm-main"><span class="alipay">Alipay<sup>HK</sup></span></span><span class="chev">${chevRight}</span></button>
+          </div>
+          <button class="btn disabled" disabled>Pay &amp; subscribe</button>
+          <div class="secure">${lock} Secure transaction</div>
+        </div>
+      </div>
+    </div>`},
+
+  'pay-saved': { crumb:'<b>Step 2b</b> · Saved card selected', body:()=>`
+    ${logo}
+    <div class="banner blue">${infoIcon}<span><b>Great choice!</b> You're securing <b>an excellent deal!</b></span></div>
+    <div class="scroll">
+      ${planCard()}
+      <div class="step">
+        ${accountRow()}
+        <div class="step-row"><span class="snum">2</span><span class="nm">Payment</span>
+          <button class="change" onclick="go('pay-choose')">Change</button></div>
+        <div class="step-body" style="padding-top:8px">
+          <div class="promo-link">Got a promo code?</div>
+          <label class="lab">Country of residence</label>
+          <div class="sel-wrap"><span class="globe">${globe}</span>
+            <select class="sel"><option>Hong Kong SAR</option></select><span class="down">${chevDown}</span></div>
+          <label class="check on"><span class="box">${checkSm}</span><span>I reside in the same country as my billing address</span></label>
+          <label class="sec-lab" style="margin-top:14px">Your credit and debit cards</label>
+          <div class="card-opt sel" onclick="selectCard(this)">
+            <span class="radio"></span>
+            <span class="cv"><span class="brand visa" style="height:24px;font-size:12px">VISA</span></span>
+            <span class="last4">*4242</span></div>
+          <div class="card-opt add" onclick="selectCard(this)">
+            <span class="radio"></span><span class="cv">Add a new card</span></div>
+          <label class="check on" style="margin-top:14px"><span class="box">${checkSm}</span><span>By subscribing, you agree to our <a href="#">terms and conditions</a></span></label>
+          <div class="renew-note">Your subscription will renew automatically unless you cancel prior to renewal</div>
+          <button class="btn" onclick="go('ty-allset')">Pay &amp; subscribe</button>
+          <div class="secure">${lock} Secure transaction</div>
+        </div>
+      </div>
+    </div>`},
+
+  'pay-billing': { crumb:'<b>Step 2b</b> · Billing details · Apple Pay', body:()=>`
+    ${logo}
+    <div class="banner blue">${infoIcon}<span><b>Great choice!</b> You're securing <b>an excellent deal!</b></span></div>
+    <div class="scroll">
+      ${planCard({expanded:true})}
+      <div class="step">
+        ${accountRow()}
+        <div class="step-row"><span class="snum">2</span><span class="nm">Payment</span>
+          <button class="change" onclick="go('pay-choose')">Change</button></div>
+        <div class="step-body" style="padding-top:14px">
+          <div class="promo"><input class="inp" placeholder="Enter promo code" oninput="promoType(this)">
+            <button class="apply" id="applyBtn">Apply</button></div>
+          <label class="lab">Country of residence</label>
+          <div class="sel-wrap"><span class="globe">${globe}</span>
+            <select class="sel"><option>Hong Kong SAR</option></select><span class="down">${chevDown}</span></div>
+          <label class="check on"><span class="box">${checkSm}</span><span>I reside in the same country as my billing address</span></label>
+          <label class="check on" style="margin-top:6px"><span class="box">${checkSm}</span><span>By subscribing, you agree to our <a href="#">terms and conditions</a></span></label>
+          <div class="renew-note">Your subscription will renew automatically unless you cancel prior to renewal</div>
+          <button class="btn dark" onclick="go('ty-confirmed')">Subscribe with ${appleWhite} Pay</button>
+          <div class="secure">${lock} Secure transaction</div>
+        </div>
+      </div>
+    </div>`},
+
+  'pay-alipay': { crumb:'<b>Step 2b</b> · Alipay QR', body:()=>`
+    ${logo}
+    <div class="banner blue">${infoIcon}<span><b>Great choice!</b> You're securing <b>an excellent deal!</b></span></div>
+    <div class="scroll">
+      ${planCard({expanded:true})}
+      <div class="step">
+        ${accountRow()}
+        <div class="step-row"><span class="snum">2</span><span class="nm">Payment</span>
+          <button class="change" onclick="go('pay-choose')">Change</button></div>
+        <div class="step-body" style="padding-top:14px">
+          <label class="check on"><span class="box">${checkSm}</span><span>By subscribing, you agree to our <a href="#">terms and conditions</a></span></label>
+          <div class="renew-note" style="margin-bottom:14px">Your subscription will renew automatically unless you cancel prior to renewal</div>
+          <div class="qr-box">
+            <div class="txt">Please <b>scan the QR code</b> with your phone to continue</div>
+            <div class="qr-img" id="qr"></div>
+          </div>
+          <div class="banner mint" style="border-radius:8px;text-align:left;font-style:italic;padding:13px 14px">
+            ${infoIcon}<span>Please check that your <b>AlipayHK transaction limit</b> is set to at least <b>HK$3,000</b> to ensure successful billing and auto-renewal.</span></div>
+          <div class="secure" style="margin-top:16px">${lock} Secure transaction</div>
+        </div>
+      </div>
+    </div>`},
+
+  'ty-allset': { crumb:"<b>Thank you</b> · You're all set", body:()=>`
+    ${logo}<div class="scroll">
+      <div class="step"><div class="step-body center" style="padding:28px 22px">
+        <div class="succ-check">${checkBig}</div>
+        <div class="h-form serif">You're all set!</div>
+        <div class="sub-form" style="margin-top:6px">Thank you! Your support helps us deliver trusted, fact-based journalism</div>
+        ${summaryTable()}
+        <div class="receipt-note">Receipt sent to your inbox. We will remind you before next billing.</div>
+        <button class="btn" onclick="go('ty-youre-in')">Start reading</button>
+      </div></div>
+    </div>`},
+
+  'ty-confirmed': { crumb:'<b>Thank you</b> · Payment confirmed', body:()=>`
+    ${logo}<div class="scroll">
+      <div class="step"><div class="step-body center" style="padding:28px 22px">
+        <div class="succ-check green">${checkBig}</div>
+        <div class="h-form serif">Payment confirmed</div>
+        <div class="sub-form" style="margin-top:6px">Thank you for supporting SCMP</div>
+        ${summaryTable()}
+        <div class="receipt-note">Receipt sent to your inbox. We will remind you before next billing.</div>
+        <button class="btn" onclick="go('ty-youre-in')">Start reading</button>
+      </div></div>
+    </div>`},
+
+  'ty-youre-in': { crumb:"<b>Thank you</b> · You're in", body:()=>`
+    ${logo}<div class="scroll">
+      <div class="step"><div class="step-body center" style="padding:26px 20px">
+        <div class="succ-check">${checkBig}</div>
+        <div class="h-form serif">You're in.</div>
+        <div class="sub-form" style="margin-top:6px">Here's what's waiting for you today</div>
+        <div class="art-wrap" style="text-align:left">
+          <div class="art-tag">Today's top read</div>
+          <div class="art">
+            <div class="meta"><div class="ttl">Mexico lawmakers approve tariff increase on Chinese and other Asian imports</div>
+              <div class="sub">1 hour ago · 27 💬</div></div>
+            <div class="thumb"></div></div>
+          <div class="art">
+            <div class="meta"><div class="ttl">Why Iran may not be the next Venezuela despite twin threat of protests</div>
+              <div class="sub">1 hour ago · 27 💬</div></div>
+            <div class="thumb"></div></div>
+        </div>
+        <div style="font-size:12px;color:var(--ink-mute);margin:16px 0 14px">Standard Annual · started today</div>
+        <button class="btn" onclick="go('signin')">Start reading</button>
+      </div></div>
+    </div>`},
+};
+
+function summaryTable(){
+  return `<div class="summary">
+    <div class="srow"><span class="k">Plan</span><span class="v">Standard Annual</span></div>
+    <div class="srow"><span class="k">Charged today</span><span class="v">HKD780.00</span></div>
+    <div class="srow"><span class="k">Renew on</span><span class="v">12 May 2027</span></div>
+    <div class="srow"><span class="k">Account</span><span class="v">abc@abc.com</span></div>
+  </div>`;
+}
+
+/* ---------- flow / nav ---------- */
+const order = ['signin','email-ok','email-bad','welcome-pw','welcome-social','reset-sent','subscribed','has-access',
+  'pay-choose','pay-noalipay','pay-cardform','price-up','price-down',
+  'pay-saved','pay-billing','pay-alipay','ty-allset','ty-confirmed','ty-youre-in'];
+let cur = 'signin';
+
+function go(name){
+  cur = name;
+  const s = screens[name];
+  document.getElementById('device').innerHTML = s.body();
+  document.getElementById('crumb').innerHTML = s.crumb;
+  document.querySelectorAll('.nav-item').forEach(b=>
+    b.classList.toggle('active', b.dataset.screen===name));
+  const i = order.indexOf(name);
+  document.getElementById('prevBtn').disabled = i<=0;
+  document.getElementById('nextBtn').disabled = i>=order.length-1;
+  const active = document.querySelector('.nav-item.active');
+  if(active) active.scrollIntoView({block:'nearest'});
+  if(name==='pay-alipay') drawQR();
+  document.querySelector('.stage').scrollTo({top:0,behavior:'smooth'});
+}
+
+/* interactive helpers */
+function emailType(el, isErr){
+  const v = el.value.trim();
+  const valid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
+  const btn = document.getElementById('emailBtn');
+  if(btn){ btn.classList.toggle('disabled', !valid); btn.disabled = !valid;
+    btn.onclick = valid ? ()=>go('welcome-pw') : null; }
+  el.classList.toggle('ok', valid);
+}
+function pwType(el){
+  const ok = el.value.length>=4;
+  const b = document.getElementById('loginBtn');
+  b.classList.toggle('disabled', !ok); b.disabled=!ok;
+  b.onclick = ok ? ()=>go('pay-choose') : null;
+}
+function togglePw(){ const p=document.getElementById('pw'); if(p) p.type = p.type==='password'?'text':'password'; }
+function toggleBilling(btn){
+  btn.classList.toggle('open');
+  const rows = btn.nextElementSibling;
+  rows.classList.toggle('show');
+  btn.querySelector('span').textContent = rows.classList.contains('show') ? 'Hide billing details' : 'See billing details';
+}
+function selectCard(el){
+  el.parentElement.querySelectorAll('.card-opt').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function promoType(el){
+  const b=document.getElementById('applyBtn');
+  b.classList.toggle('live', el.value.trim().length>0);
+}
+function drawQR(){
+  const box=document.getElementById('qr'); if(!box) return;
+  let g='', n=21;
+  for(let y=0;y<n;y++)for(let x=0;x<n;x++){
+    const finder=(x<7&&y<7)||(x>n-8&&y<7)||(x<7&&y>n-8);
+    const on = finder ? !((x>0&&x<6&&y>0&&y<6)&&!(x>1&&x<5&&y>1&&y<5)) : ((x*y+x+y)%3===0||(x+y)%4===0);
+    g+=`<rect x="${x*4.4}" y="${y*4.4}" width="4.4" height="4.4" fill="${on?'#111':'transparent'}"/>`;
+  }
+  box.innerHTML=`<svg viewBox="0 0 ${n*4.4} ${n*4.4}" width="100%" height="100%">${g}</svg>`;
+}
+
+document.querySelectorAll('.nav-item').forEach(b=>
+  b.addEventListener('click',()=>go(b.dataset.screen)));
+document.getElementById('prevBtn').onclick=()=>{const i=order.indexOf(cur); if(i>0) go(order[i-1]);};
+document.getElementById('nextBtn').onclick=()=>{const i=order.indexOf(cur); if(i<order.length-1) go(order[i+1]);};
+document.getElementById('restart').onclick=()=>go('signin');
+go('signin');
+</script>
+</body>
+</html>
