@@ -459,6 +459,15 @@ function fmtMoney(money) {
   return `${money.currency}${money.amount.toFixed(money.amount % 1 === 0 ? 0 : 2)}`;
 }
 
+// Does this phase recur (charge the card more than once)?
+//   - the ongoing renewal phase always recurs
+//   - any phase with more than one billing cycle recurs
+//   - a single-cycle, non-renewal phase is a one-time charge
+function isRecurring(phase) {
+  if (phase.is_post_contract) return true;
+  return (phase.cycles || 1) > 1;
+}
+
 function fmtPhasePrice(phase) {
   if (phase.kind === 'free') return 'FREE';
   const base = fmtMoney(phase.price);
@@ -466,15 +475,16 @@ function fmtPhasePrice(phase) {
   const value = phase.billing_value || 1;
   const unit  = phase.billing_unit || 'month';
 
-  // Lump-sum block (charged once over multiple units) → no suffix;
-  // the "First 3 months" label carries the duration instead.
-  if (isLumpSum(phase)) return base;
+  // The /mo /yr suffix is a signal that the charge REPEATS. Only show it
+  // when the phase actually recurs — otherwise it misleads the user into
+  // thinking a one-time charge will hit their card every period.
+  if (!isRecurring(phase)) return base;            // one-time → bare price
 
   // Recurring single-unit period → compact suffix.
   if (value === 1 && SUFFIX[unit]) return `${base}${SUFFIX[unit]}`;
 
   // Recurring multi-unit period (e.g. billed every 2 months) → no suffix;
-  // descriptor says "billed every 2 months" so the price stays clean.
+  // the descriptor states "billed every 2 months" instead.
   return base;
 }
 
@@ -484,15 +494,28 @@ function computeDiscount(phase) {
 }
 
 function buildDurationLabel(phase, position, totalPhases) {
-  // Position decides which grammatical form to use:
-  //   first / middle → span form  ("First 3 months", "Next year")
-  //   last / single  → cadence    ("After that, billed every 2 months")
+  // Three positional forms — chosen to avoid calendar ambiguity:
+  //   first  → "First {span}"            (duration, unambiguous)
+  //   middle → "Then for {span}"         ("then" = sequential, never calendar)
+  //   last   → "After that, billed {cadence}"  (how it recurs going forward)
+  //
+  // Singular rule: when the span is exactly one unit, drop the number and
+  // use the bare unit — "First year", not "First 1 year".
   if (totalPhases === 1 || position === totalPhases - 1) {
     if (isLumpSum(phase)) return 'One-time charge';
     return `After that, billed ${cadencePhrase(phase)}`;
   }
-  if (position === 0) return `First ${spanPhrase(phase)}`;
-  return `Next ${spanPhrase(phase)}`;
+  const span = spanPhrase(phase);
+  if (position === 0) return `First ${span}`;
+  return `Then for ${spanArticle(span)}`;
+}
+
+// "a year" / "an hour" / "3 months" — sentence-friendly span with article
+// for singular. Used in the middle-phase label ("Then for a year") and the
+// summary line ("then HKD480 for a year").
+function spanArticle(span) {
+  if (/^\d/.test(span)) return span;                       // "3 months"
+  return /^[aeiou]/i.test(span) ? `an ${span}` : `a ${span}`;  // "a year"
 }
 
 // The descriptor is now COMPOSED, not looked up:
@@ -528,13 +551,11 @@ function buildDescriptor(phase) {
 }
 
 function buildPhaseDurationProse(phase) {
-  // Sentence form for the summary line: "HKD30/mo for {a month}" /
-  // "HKD480 for {a year}" / "HKD90 for {3 months}".
-  // Reuses the same generic span computation; just prefixes "a/an" for
-  // singular so it reads naturally inside a sentence.
-  const span = spanPhrase(phase);                 // "month", "3 months", "7 days"
-  if (/^\d/.test(span)) return span;              // "3 months" — already fine
-  return /^[aeiou]/i.test(span) ? `an ${span}` : `a ${span}`;  // "a month"
+  // Sentence form for the summary line: "HKD30/mo for {a month}",
+  // "HKD480 for {a year}", "HKD90 for {3 months}".
+  // Identical wording to the middle-phase label so the card never
+  // contradicts itself.
+  return spanArticle(spanPhrase(phase));
 }
 
 function buildSummaryLine(phases) {
